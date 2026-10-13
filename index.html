@@ -175,7 +175,7 @@ ul.plain li:last-child{border-bottom:0}
     </div>
   </header>
   <div class="toolbar" id="local-bar" hidden style="margin-top:12px">
-    <span class="hint grow">I dati sono salvati in questo browser. Esporta un backup periodicamente o per trasferirli su un altro computer.</span>
+    <span class="hint grow">I dati sono salvati in questo browser. Esporta un backup periodicamente o per trasferirli su un altro computer. <span id="app-ver"></span></span>
     <button class="btn small" data-act="backup-export">Esporta backup</button>
     <label class="btn small" for="backup-in">Ripristina backup</label><input type="file" id="backup-in" accept=".json,application/json" hidden>
   </div>
@@ -578,6 +578,9 @@ document.addEventListener("click",async e=>{
   else if(a==="save-report")saveReport();
   else if(a==="csv-contatti")csvContatti();
   else if(a==="csv-inviti")csvInviti();
+  else if(a==="prev-download"){const p=previousData();if(p)saveFile("rubrica-stand-florio-dati-precedenti-"+p.data+".json",JSON.stringify(p.dati,null,2),"application/json")}
+  else if(a==="prev-restore"){if(rmArmed!=="prev"){rmArmed="prev";t.textContent="Conferma ripristino";return}rmArmed=null;const p=previousData();if(p&&p.dati&&S.db.importData){S.db.importData(p.dati);$("#notice").innerHTML="";toast("Dati precedenti ripristinati")}}
+  else if(a==="prev-close")$("#notice").innerHTML="";
   else if(a==="backup-export"&&S.db.exportData)saveFile("rubrica-stand-florio-backup-"+todayStr()+".json",JSON.stringify(S.db.exportData(),null,2),"application/json");
 });
 document.addEventListener("change",async e=>{
@@ -646,11 +649,30 @@ const SEED={
 };
 
 /* ---------- archivio locale: usato quando la pagina è aperta fuori da Claude ---------- */
+/* Versione del codice e dei dati predefiniti: va incrementata a ogni nuova consegna del file.
+   Se il browser ha dati salvati con una versione diversa, vengono sostituiti dai dati predefiniti
+   di questa versione; i dati precedenti restano in una copia di sicurezza ripristinabile. */
+const APP_VERSION="2026.10.13-5";
+const KEY_DATI="sf-rubrica-dati-v1",KEY_VER="sf-rubrica-versione",KEY_PREC="sf-rubrica-dati-precedenti";
+function checkVersion(){
+  let saved=null,raw=null;
+  try{saved=localStorage.getItem(KEY_VER);raw=localStorage.getItem(KEY_DATI)}catch(_){return null}
+  if(saved===APP_VERSION)return null;
+  let info=null;
+  if(raw){
+    try{localStorage.setItem(KEY_PREC,JSON.stringify({versione:saved||"precedente",data:todayStr(),dati:JSON.parse(raw)}));info={from:saved||"precedente"}}catch(_){}
+    try{localStorage.removeItem(KEY_DATI);localStorage.removeItem("sf-ev")}catch(_){}
+  }
+  try{localStorage.setItem(KEY_VER,APP_VERSION)}catch(_){}
+  return info;
+}
+function previousData(){try{return JSON.parse(localStorage.getItem(KEY_PREC))}catch(_){return null}}
+
 function makeLocalDB(seed){
-  const KEY="sf-rubrica-dati-v1";
+  const KEY=KEY_DATI;
   const clone=o=>JSON.parse(JSON.stringify(o));
   let data=null;try{data=JSON.parse(localStorage.getItem(KEY))}catch(_){}
-  if(!data||typeof data!=="object"||!data.contacts)data=clone(seed);
+  if(!data||typeof data!=="object"||!data.contacts){data=clone(seed);try{localStorage.setItem(KEY,JSON.stringify(data))}catch(_){}}
   const listeners=[];
   const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(data))}catch(_){}};
   const notify=()=>listeners.slice().forEach(l=>l());
@@ -671,12 +693,21 @@ function makeLocalDB(seed){
     exportData:()=>clone(data),importData:d=>{data=clone(d);persist();notify()}};
 }
 
+function showVersionNotice(from){
+  $("#notice").innerHTML=`<div class="notice"><strong>Il file è stato aggiornato alla versione ${esc(APP_VERSION)}.</strong> La rubrica è stata ricaricata con i dati inclusi in questa versione. I dati che avevi salvato con la versione ${esc(from)} sono conservati in una copia di sicurezza.
+  <div class="toolbar" style="margin:10px 0 0"><button class="btn small" data-act="prev-download">Scarica i dati precedenti</button><button class="btn small" data-act="prev-restore">Ripristina i dati precedenti</button><button class="btn small" data-act="prev-close">Chiudi</button></div></div>`;
+}
+
 (async function boot(){
   const h=(location.hash||"").slice(1);if(["report","inviti","contatti","eventi"].includes(h))S.tab=h;
   render();
   let db=null;
   if(window.claude&&typeof window.claude.use==="function"){try{db=await window.claude.use("db")}catch(_){db=null}}
-  if(!db){db=makeLocalDB(SEED);$("#local-bar").hidden=false}
+  if(!db){
+    const changed=checkVersion();
+    db=makeLocalDB(SEED);$("#local-bar").hidden=false;$("#app-ver").textContent="Versione "+APP_VERSION+".";
+    if(changed)showVersionNotice(changed.from);
+  }
   S.db=db;
   if(!db.local)try{const u=await window.claude.use("user");if(u){const c=await u.can("data.write");if(c===false)S.canWrite=false}}catch(_){}
   sub("contacts","contacts");sub("events","events");sub("invites","invites");sub("reports","reports");
