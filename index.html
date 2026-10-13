@@ -176,6 +176,7 @@ ul.plain li:last-child{border-bottom:0}
   </header>
   <div class="toolbar" id="local-bar" hidden style="margin-top:12px">
     <span class="hint grow">I dati sono salvati in questo browser. Esporta un backup periodicamente o per trasferirli su un altro computer. <span id="app-ver"></span></span>
+    <button class="btn small primary" data-act="build-file">Crea file aggiornato da condividere</button>
     <button class="btn small" data-act="backup-export">Esporta backup</button>
     <label class="btn small" for="backup-in">Ripristina backup</label><input type="file" id="backup-in" accept=".json,application/json" hidden>
   </div>
@@ -192,6 +193,8 @@ ul.plain li:last-child{border-bottom:0}
 <div id="toast-root"></div>
 
 <script>
+/* Copia del sorgente della pagina, catturata prima di qualsiasi modifica: serve a generare il file aggiornato */
+const SOURCE_HTML="<!doctype html>\n"+document.documentElement.outerHTML;
 const CATS=[
  {k:"giornalisti",l:"Giornalisti e testate"},
  {k:"istituzioni",l:"Istituzioni e PA"},
@@ -581,6 +584,10 @@ document.addEventListener("click",async e=>{
   else if(a==="prev-download"){const p=previousData();if(p)saveFile("rubrica-stand-florio-dati-precedenti-"+p.data+".json",JSON.stringify(p.dati,null,2),"application/json")}
   else if(a==="prev-restore"){if(rmArmed!=="prev"){rmArmed="prev";t.textContent="Conferma ripristino";return}rmArmed=null;const p=previousData();if(p&&p.dati&&S.db.importData){S.db.importData(p.dati);$("#notice").innerHTML="";toast("Dati precedenti ripristinati")}}
   else if(a==="prev-close")$("#notice").innerHTML="";
+  else if(a==="build-file"&&S.db.exportData){
+    try{const r=buildUpdatedFile();lsSet(KEY_VER,r.ver);await saveFile("Rubrica-Stand-Florio-"+r.ver+".html",r.html,"text/html;charset=utf-8");
+      $("#notice").innerHTML=`<div class="notice"><strong>File aggiornato creato (versione ${esc(r.ver)}).</strong> Contiene tutti i dati presenti ora nella rubrica. Invialo ai colleghi e usa d'ora in poi questo file al posto del precedente: chi lo apre vedrà questi dati, anche se aveva una copia più vecchia. <button class="btn small" data-act="prev-close" style="margin-left:6px">Chiudi</button></div>`}
+    catch(_){toast("Non è stato possibile creare il file aggiornato.")}}
   else if(a==="backup-export"&&S.db.exportData)saveFile("rubrica-stand-florio-backup-"+todayStr()+".json",JSON.stringify(S.db.exportData(),null,2),"application/json");
 });
 document.addEventListener("change",async e=>{
@@ -623,7 +630,7 @@ function sub(col,key){
 const EV="florio-marsala-tonno-2026";
 const C0=(o)=>({nome:"",cognome:"",organizzazione:"",ruolo:"",email:"",telefono:"",note:"",eventi:[],creato:"2026-10-13",aggiornato:"2026-10-13",...o});
 const I0=(cid,o)=>({eventId:EV,contactId:cid,stato:"da_invitare",ruoloEvento:"Ospite",dataInvito:"",dataSollecito:"",dataRisposta:"",accompagnatori:0,presente:false,note:"",...o});
-const SEED={
+/*SEED-START*/const SEED={
   events:{[EV]:{nome:"Florio. Marsala e Tonno",data:"2026-11-06",luogo:"Stand Florio, Via Messina Marine 40, Palermo"}},
   settings:{main:{tasso:35,soglia:7,targetMin:70,targetMax:100}},
   reports:{},
@@ -646,13 +653,27 @@ const SEED={
     [EV+"__taormina-irene"]:I0("taormina-irene",{}),
     [EV+"__auci-stefania"]:I0("auci-stefania",{})
   }
-};
+};/*SEED-END*/
 
 /* ---------- archivio locale: usato quando la pagina è aperta fuori da Claude ---------- */
 /* Versione del codice e dei dati predefiniti: va incrementata a ogni nuova consegna del file.
    Se il browser ha dati salvati con una versione diversa, vengono sostituiti dai dati predefiniti
    di questa versione; i dati precedenti restano in una copia di sicurezza ripristinabile. */
-const APP_VERSION="2026.10.13-5";
+const APP_VERSION=/*VER*/"2026.10.13-6"/*VER*/;
+
+/* Genera una copia del file con i dati attuali incorporati come dati predefiniti e una nuova versione */
+function buildUpdatedFile(){
+  const M1="/*SEED-"+"START*/",M2="/*SEED-"+"END*/";
+  const s=SOURCE_HTML.indexOf(M1),e=SOURCE_HTML.indexOf(M2);
+  if(s<0||e<0)throw new Error("marcatori mancanti");
+  const n=new Date(),p=x=>String(x).padStart(2,"0");
+  const ver=n.getFullYear()+"."+p(n.getMonth()+1)+"."+p(n.getDate())+"-"+p(n.getHours())+p(n.getMinutes());
+  const json=JSON.stringify(S.db.exportData(),null,1).replace(/</g,"\\u003c");
+  let html=SOURCE_HTML.slice(0,s)+M1+"const SEED="+json+";"+SOURCE_HTML.slice(e);
+  const re=new RegExp("/\\*V"+"ER\\*/\"[^\"]*\"/\\*V"+"ER\\*/");
+  html=html.replace(re,"/*V"+"ER*/\""+ver+"\"/*V"+"ER*/");
+  return{html,ver};
+}
 const KEY_DATI="sf-rubrica-dati-v1",KEY_VER="sf-rubrica-versione",KEY_PREC="sf-rubrica-dati-precedenti";
 function checkVersion(){
   let saved=null,raw=null;
