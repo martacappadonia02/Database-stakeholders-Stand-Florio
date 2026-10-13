@@ -1,15 +1,16 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="it"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rubrica Stand Florio</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=Source+Sans+3:wght@400;600;700&display=swap">
 <style>
 /* Layout: barra evento in alto, quattro schede (Report · Inviti · Contatti · Eventi), tabelle operative a tutta larghezza */
 :root{
   --bg:#F4F4F1; --surface:#FFFFFF; --sunk:#ECEBE7; --ink:#1E1A1B; --muted:#6A6265; --line:#DEDAD6;
   --marsala:#7B1E2E; --marsala-soft:#F4E5E8; --sole:#F2C618; --sole-ink:#3B2A00; --tonno:#2D4A7C; --tonno-soft:#E4EAF4;
   --ok:#2C7448; --ok-soft:#E1F0E6; --warn:#9A5B00; --warn-soft:#FBEED6; --bad:#A1302B; --bad-soft:#F8E1DF; --idle:#6A6265; --idle-soft:#ECEBE7;
-  --f-display:"Jost","Futura","Century Gothic",system-ui,sans-serif;
-  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-display:"Futura","Century Gothic","Avenir Next","Trebuchet MS",system-ui,sans-serif;
+  --f-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --r:6px;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -23,7 +24,9 @@
   --ok:#72C493; --ok-soft:#1E3326; --warn:#E6A94E; --warn-soft:#3A2D16; --bad:#F08479; --bad-soft:#3D2220; --idle:#A49EA0; --idle-soft:#262A33;
   color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+html{-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
 .wrap{max-width:1280px;margin:0 auto;padding-inline:20px;padding-block:20px 60px}
 h1,h2,h3{font-family:var(--f-display);font-weight:500;margin:0;text-wrap:balance}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -62,6 +65,15 @@ textarea{width:100%;min-height:80px;resize:vertical}
 
 /* tabelle */
 .tbl-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+/* elenchi lunghi: area con altezza fissa, così la barra di scorrimento orizzontale resta sempre visibile */
+.tbl-wrap.scroll{overflow:auto;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px);min-height:260px;overscroll-behavior:contain}
+.tbl-wrap.scroll table{border-collapse:separate;border-spacing:0}
+.tbl-wrap.scroll thead th{position:sticky;top:0;z-index:2}
+@media (min-width:700px){
+  .tbl-wrap.scroll th:first-child,.tbl-wrap.scroll td:first-child{position:sticky;left:0;z-index:1;background:var(--surface);box-shadow:1px 0 0 var(--line);min-width:220px}
+  .tbl-wrap.scroll thead th:first-child{z-index:3;background:var(--sunk)}
+}
+.scroll-nav{display:flex;gap:6px;align-items:center}
 table{border-collapse:collapse;width:100%}
 th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;background:var(--sunk);white-space:nowrap}
@@ -146,6 +158,8 @@ ul.plain li:last-child{border-bottom:0}
 @media (max-width:560px){.brand h1{font-size:23px}.frow{grid-template-columns:110px minmax(0,1fr) 40px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
+</head>
+<body>
 
 <div class="wrap" id="app">
   <header class="top">
@@ -159,6 +173,10 @@ ul.plain li:last-child{border-bottom:0}
       <span class="countdown" id="countdown"></span>
     </div>
   </header>
+  <div class="toolbar" id="local-bar" hidden="" style="margin-top:12px">
+    <span class="hint grow"><span id="app-ver"></span> Le modifiche fatte qui non vengono salvate: per renderle visibili a tutti scarica il file aggiornato e caricalo su GitHub al posto del precedente. <strong id="dirty-flag" hidden="" style="color:var(--warn)">Ci sono modifiche non ancora scaricate.</strong></span>
+    <button class="btn small primary" data-act="build-file">Scarica il file aggiornato</button>
+  </div>
   <nav class="tabs" role="tablist" id="tabs">
     <button role="tab" data-tab="report">Report settimanale</button>
     <button role="tab" data-tab="inviti">Inviti<span class="n" id="n-inviti">0</span></button>
@@ -172,6 +190,8 @@ ul.plain li:last-child{border-bottom:0}
 <div id="toast-root"></div>
 
 <script>
+/* Copia del sorgente della pagina, catturata prima di qualsiasi modifica: serve a generare il file aggiornato */
+const SOURCE_HTML="<!doctype html>\n"+document.documentElement.outerHTML;
 const CATS=[
  {k:"giornalisti",l:"Giornalisti e testate"},
  {k:"istituzioni",l:"Istituzioni e PA"},
@@ -201,8 +221,6 @@ function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMo
 function days(a,b){if(!a||!b)return null;const pa=a.split("-").map(Number),pb=b.split("-").map(Number);return Math.round((Date.UTC(pb[0],pb[1]-1,pb[2])-Date.UTC(pa[0],pa[1]-1,pa[2]))/864e5)}
 function fmt(s,long){if(!s)return"—";const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("it-IT",long?{day:"numeric",month:"long",year:"numeric"}:{day:"numeric",month:"short"})}
 function fullName(c){return [c.nome,c.cognome].filter(Boolean).join(" ")||c.organizzazione||"(senza nome)"}
-function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
-function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function toast(m){const r=$("#toast-root");r.innerHTML=`<div class="toast" role="status">${esc(m)}</div>`;clearTimeout(toast.t);toast.t=setTimeout(()=>r.innerHTML="",3200)}
 function errMsg(e){const c=e&&e.code;if(c==="invalid_argument")return"Non hai i permessi per modificare la rubrica.";if(c==="quota_exceeded")return"Spazio del database esaurito: elimina contatti non più utili.";if(c==="resource_exhausted")return"Troppe modifiche ravvicinate: riprova tra qualche secondo.";return"Modifica non salvata. Riprova."}
 async function w(fn){try{await fn();return true}catch(e){if(e&&e.code==="unavailable"){await new Promise(r=>setTimeout(r,600+Math.random()*600));try{await fn();return true}catch(e2){toast(errMsg(e2));return false}}toast(errMsg(e));return false}}
@@ -244,7 +262,9 @@ function render(){
   const v=$("#view");
   if(!S.db){return}
   if(!S.loaded.contacts||!S.loaded.events||!S.loaded.invites){v.innerHTML=`<div class="empty"><strong>Caricamento della rubrica…</strong>I contatti e lo stato degli inviti compariranno qui.</div>`;return}
+  const old=v.querySelector(".tbl-wrap.scroll"),pos=old?{id:old.id,l:old.scrollLeft,t:old.scrollTop}:null;
   v.innerHTML=({report:viewReport,inviti:viewInviti,contatti:viewContatti,eventi:viewEventi}[S.tab]||viewReport)();
+  const nw=v.querySelector(".tbl-wrap.scroll");if(pos&&nw&&nw.id===pos.id){nw.scrollLeft=pos.l;nw.scrollTop=pos.t}
 }
 
 function noEvent(){return`<div class="empty"><strong>Nessun evento registrato</strong>Crea il primo evento nella scheda Eventi per iniziare a tracciare gli inviti.</div>`}
@@ -324,13 +344,14 @@ function viewInviti(){
   return`
   <div class="toolbar">
     <div class="grow"><input type="search" id="q-inv" placeholder="Cerca per nome, ente, email" value="${esc(S.q)}" aria-label="Cerca negli inviti"></div>
+    <span class="scroll-nav"><button class="btn small" data-act="scroll-l" aria-label="Scorri a sinistra">◀</button><button class="btn small" data-act="scroll-r" aria-label="Scorri a destra">▶</button></span>
     <button class="btn primary w" data-act="open-add">Aggiungi contatti all'evento</button>
   </div>
   <div class="chips" style="margin-bottom:14px">
     <button class="chip" data-stato="" aria-pressed="${!S.stato}">Tutti · ${all.length}</button>
     ${STATI.map(s=>`<button class="chip" data-stato="${s.k}" aria-pressed="${S.stato===s.k}">${s.l} · ${counts[s.k]}</button>`).join("")}
   </div>
-  ${all.length?`<div class="tbl-wrap"><table><thead><tr><th>Contatto</th><th>Ruolo nell'evento</th><th>Stato</th><th>Invito</th><th>Sollecito</th><th>Risposta</th><th>Accomp.</th><th>Presente</th><th>Note</th><th class="w"></th></tr></thead><tbody>
+  ${all.length?`<div class="tbl-wrap scroll" id="scroll-inviti"><table><thead><tr><th>Contatto</th><th>Ruolo nell'evento</th><th>Stato</th><th>Invito</th><th>Sollecito</th><th>Risposta</th><th>Accomp.</th><th>Presente</th><th>Note</th><th class="w"></th></tr></thead><tbody>
   ${rows.map(i=>{const c=contactById(i.contactId);const ref=i.stato==="sollecitato"?i.dataSollecito:i.dataInvito;const d=days(ref,today);const due=(i.stato==="invitato"||i.stato==="sollecitato")&&(ref==null||d>=soglia);
    return`<tr data-inv="${esc(i.id)}">
     <td><strong>${esc(fullName(c))}</strong><span class="sub">${esc([c.organizzazione,c.ruolo].filter(Boolean).join(" · "))}</span><span class="cat">${esc(catLabel(c.categoria))}</span>${due?`<span class="flag">Da sollecitare${d!=null?" · "+d+" gg":""}</span>`:""}</td>
@@ -357,11 +378,12 @@ function viewContatti(){
   <div class="toolbar">
     <div class="grow"><input type="search" id="q-con" placeholder="Cerca per nome, ente, email, note" value="${esc(S.q)}" aria-label="Cerca nei contatti"></div>
     <select id="f-cat" aria-label="Filtra per categoria"><option value="">Tutte le categorie</option>${CATS.map(c=>`<option value="${c.k}"${S.cat===c.k?" selected":""}>${c.l} (${S.contacts.filter(x=>x.categoria===c.k).length})</option>`).join("")}</select>
+    <span class="scroll-nav"><button class="btn small" data-act="scroll-l" aria-label="Scorri a sinistra">◀</button><button class="btn small" data-act="scroll-r" aria-label="Scorri a destra">▶</button></span>
     <button class="btn primary w" data-act="new-contact">Nuovo contatto</button>
     <label class="btn w" for="csv-in">Importa CSV</label><input type="file" id="csv-in" accept=".csv,text/csv" hidden>
     <button class="btn" data-act="csv-contatti">Scarica CSV</button>
   </div>
-  ${S.contacts.length?`<div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Organizzazione · ruolo</th><th>Email · telefono</th><th>Categoria</th><th>Provenienza</th><th>Eventi a cui ha partecipato</th><th>Note</th><th class="w"></th></tr></thead><tbody>
+  ${S.contacts.length?`<div class="tbl-wrap scroll" id="scroll-contatti"><table><thead><tr><th>Nome</th><th>Organizzazione · ruolo</th><th>Email · telefono</th><th>Categoria</th><th>Provenienza</th><th>Eventi a cui ha partecipato</th><th>Note</th><th class="w"></th></tr></thead><tbody>
   ${rows.map(c=>`<tr>
     <td><strong>${esc(fullName(c))}</strong></td>
     <td>${esc(c.organizzazione||"—")}<span class="sub">${esc(c.ruolo||"")}</span></td>
@@ -472,12 +494,12 @@ async function updateInvite(id,field,el){
 
 /* ---------- CSV ---------- */
 function csvCell(v){v=String(v??"");return/[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
-async function download(name,rows){
-  const text="﻿"+rows.map(r=>r.map(csvCell).join(";")).join("\r\n");
-  const dl=window.claude?await window.claude.use("downloads"):null;
-  if(!dl){toast("Il download non è disponibile in questa visualizzazione.");return}
-  try{await dl.save({filename:name,data:text});toast("File pronto")}catch(e){if(e&&e.code!=="declined")toast("Download non riuscito.")}
+async function saveFile(name,text,mime){
+  const dl=(window.claude&&window.claude.use)?await window.claude.use("downloads"):null;
+  if(dl){try{await dl.save({filename:name,data:text});toast("File pronto")}catch(e){if(e&&e.code!=="declined")toast("Download non riuscito.")}return}
+  try{const url=URL.createObjectURL(new Blob([text],{type:mime}));const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000)}catch(e){toast("Download non riuscito.")}
 }
+function download(name,rows){return saveFile(name,"﻿"+rows.map(r=>r.map(csvCell).join(";")).join("\r\n"),"text/csv;charset=utf-8")}
 function csvContatti(){const rows=[["Nome","Cognome","Organizzazione","Ruolo","Email","Telefono","Categoria","Provenienza","Eventi partecipati","Note"]];
   S.contacts.forEach(c=>rows.push([c.nome,c.cognome,c.organizzazione,c.ruolo,c.email,c.telefono,catLabel(c.categoria),c.provenienza,(c.eventi||[]).map(id=>{const e=eventById(id);return e?e.nome+" ("+e.data+")":""}).filter(Boolean).join(" | "),c.note]));
   download("rubrica-stand-florio-"+todayStr()+".csv",rows)}
@@ -536,7 +558,8 @@ document.addEventListener("click",async e=>{
   if(t.dataset.tab){S.tab=t.dataset.tab;S.q="";S.stato="";try{history.replaceState(null,"","#"+S.tab)}catch(_){}render();return}
   if(t.hasAttribute("data-stato")&&!t.dataset.act){S.stato=t.dataset.stato;render();return}
   const a=t.dataset.act,id=t.dataset.id;
-  if(a==="close-sheet")closeSheet();
+  if(a==="scroll-l"||a==="scroll-r"){const sc=document.querySelector("#view .tbl-wrap.scroll");if(sc)sc.scrollBy({left:(a==="scroll-r"?1:-1)*Math.round(sc.clientWidth*.6),behavior:"smooth"})}
+  else if(a==="close-sheet")closeSheet();
   else if(a==="new-contact")contactSheet(null);
   else if(a==="edit-contact")contactSheet(contactById(id));
   else if(a==="save-contact")saveContact();
@@ -553,10 +576,16 @@ document.addEventListener("click",async e=>{
   else if(a==="save-report")saveReport();
   else if(a==="csv-contatti")csvContatti();
   else if(a==="csv-inviti")csvInviti();
+  else if(a==="prev-close")$("#notice").innerHTML="";
+  else if(a==="recover"){const d=oldBrowserData();if(d&&S.db.importData){S.db.importData(d);$("#notice").innerHTML="";toast("Dati caricati: ora scarica il file aggiornato")}}
+  else if(a==="build-file"&&S.db.exportData){
+    try{const r=buildUpdatedFile();await saveFile("Rubrica-Stand-Florio-"+r.ver+".html",r.html,"text/html;charset=utf-8");
+      S.dirty=false;updateDirty();$("#notice").innerHTML=`<div class="notice"><strong>File aggiornato creato (versione ${esc(r.ver)}).</strong> Contiene tutti i dati presenti ora nella rubrica. Caricalo su GitHub al posto del file precedente, con lo stesso nome (per esempio index.html): da quel momento chiunque apra il link vedrà questi dati. <button class="btn small" data-act="prev-close" style="margin-left:6px">Chiudi</button></div>`}
+    catch(_){toast("Non è stato possibile creare il file aggiornato.")}}
 });
 document.addEventListener("change",async e=>{
   const el=e.target;
-  if(el.id==="evsel"){S.eventId=el.value;lsSet("sf-ev",el.value);render();return}
+  if(el.id==="evsel"){S.eventId=el.value;render();return}
   if(el.id==="f-cat"){S.cat=el.value;render();return}
   if(el.id==="csv-in"&&el.files[0]){importCSV(el.files[0]);el.value="";return}
   if(el.id==="add-cat"){filterAdd();return}
@@ -581,7 +610,6 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#sheet-root").in
 /* ---------- avvio ---------- */
 function pickEvent(){
   if(S.eventId&&eventById(S.eventId))return;
-  const saved=lsGet("sf-ev");if(saved&&eventById(saved)){S.eventId=saved;return}
   const t=todayStr(),evs=[...S.events].sort((a,b)=>(a.data||"").localeCompare(b.data||""));
   const next=evs.find(e=>e.data>=t)||evs[evs.length-1];S.eventId=next?next.id:null;
 }
@@ -589,16 +617,412 @@ function sub(col,key){
   return S.db.collection(col).onSnapshot(snap=>{S[key]=snap.docs.map(d=>({id:d.id,...d.data()}));if(key in S.loaded)S.loaded[key]=true;if(key==="events")pickEvent();requestRender()},
     err=>{$("#notice").innerHTML=`<div class="notice">La sincronizzazione si è interrotta. Ricarica la pagina per riprendere.</div>`});
 }
+/* ---------- dati predefiniti (stato al 13 ottobre 2026) ---------- */
+const EV="florio-marsala-tonno-2026";
+const C0=(o)=>({nome:"",cognome:"",organizzazione:"",ruolo:"",email:"",telefono:"",note:"",eventi:[],creato:"2026-10-13",aggiornato:"2026-10-13",...o});
+const I0=(cid,o)=>({eventId:EV,contactId:cid,stato:"da_invitare",ruoloEvento:"Ospite",dataInvito:"",dataSollecito:"",dataRisposta:"",accompagnatori:0,presente:false,note:"",...o});
+/*SEED-START*/const SEED={
+ "events": {
+  "florio-marsala-tonno-2026": {
+   "nome": "Florio. Marsala e Tonno",
+   "data": "2026-11-06",
+   "luogo": "Stand Florio, Via Messina Marine 40, Palermo"
+  }
+ },
+ "settings": {
+  "main": {
+   "tasso": 35,
+   "soglia": 7,
+   "targetMin": 70,
+   "targetMax": 100
+  }
+ },
+ "reports": {
+  "florio-marsala-tonno-2026__2026-10-13": {
+   "eventId": "florio-marsala-tonno-2026",
+   "data": "2026-10-13",
+   "individuati": 6,
+   "inviati": 6,
+   "risposte": 6,
+   "conf": 6,
+   "rif": 0,
+   "attesa": 0,
+   "solleciti": 0,
+   "stima": 6
+  }
+ },
+ "contacts": {
+  "carrera-fabrizio": {
+   "nome": "Fabrizio",
+   "cognome": "Carrera",
+   "organizzazione": "Cronache di Gusto",
+   "ruolo": "Giornalista",
+   "email": "info@cronachedigusto.it",
+   "telefono": "",
+   "note": "Email generica di redazione: verificare un indirizzo diretto.",
+   "eventi": [],
+   "creato": "2026-10-13",
+   "aggiornato": "2026-10-13",
+   "categoria": "giornalisti",
+   "provenienza": "Contatto diretto"
+  },
+  "magnisi-roberto": {
+   "nome": "Roberto",
+   "cognome": "Magnisi",
+   "organizzazione": "Duca di Salaparuta – Cantine Florio",
+   "ruolo": "Direttore delle Cantine",
+   "email": "info@duca.it",
+   "telefono": "",
+   "note": "Email generica aziendale.",
+   "eventi": [],
+   "creato": "2026-10-13",
+   "aggiornato": "2026-10-13",
+   "categoria": "imprese",
+   "provenienza": "Contatto diretto"
+  },
+  "maniscalco-danilo": {
+   "nome": "Danilo",
+   "cognome": "Maniscalco",
+   "organizzazione": "",
+   "ruolo": "Architetto e storico dell'arte",
+   "email": "danilomaniscalco@hotmail.it",
+   "telefono": "",
+   "note": "",
+   "eventi": [],
+   "creato": "2026-10-13",
+   "aggiornato": "2026-10-13",
+   "categoria": "altri",
+   "provenienza": "Contatto diretto"
+  },
+  "requirez-salvatore": {
+   "nome": "Salvatore",
+   "cognome": "Requirez",
+   "organizzazione": "",
+   "ruolo": "Storico e scrittore",
+   "email": "",
+   "telefono": "",
+   "note": "Email e telefono da reperire.",
+   "eventi": [],
+   "creato": "2026-10-13",
+   "aggiornato": "2026-10-13",
+   "categoria": "altri",
+   "provenienza": "Contatto diretto"
+  },
+  "nino-castiglione": {
+   "nome": "",
+   "cognome": "",
+   "organizzazione": "Nino Castiglione – Favignana",
+   "ruolo": "Rappresentante da individuare",
+   "email": "info@ninocastiglione.it",
+   "telefono": "",
+   "note": "Nominativo del rappresentante e recapiti da definire.",
+   "eventi": [],
+   "creato": "2026-10-13",
+   "aggiornato": "2026-10-13",
+   "categoria": "imprese",
+   "provenienza": "Contatto diretto"
+  },
+  "consorzio-marsala-doc": {
+   "nome": "",
+   "cognome": "",
+   "organizzazione": "Consorzio di Tutela Vini Marsala DOC",
+   "ruolo": "",
+   "email": "",
+   "telefono": "",
+   "note": "Coinvolgimento previsto nella relazione progettuale; non presente nel programma del 9 ottobre.",
+   "eventi": [],
+   "creato": "2026-10-13",
+   "aggiornato": "2026-10-13",
+   "categoria": "associazioni",
+   "provenienza": "Relazione progettuale"
+  },
+  "taormina-irene": {
+   "nome": "Irene",
+   "cognome": "Taormina",
+   "organizzazione": "Cantine Florio",
+   "ruolo": "On Trade Activation Manager",
+   "email": "",
+   "telefono": "",
+   "note": "Indicata come relatrice nella relazione di marzo; nel programma attuale interviene Roberto Magnisi.",
+   "eventi": [],
+   "creato": "2026-10-13",
+   "aggiornato": "2026-10-13",
+   "categoria": "imprese",
+   "provenienza": "Relazione progettuale"
+  },
+  "auci-stefania": {
+   "nome": "Stefania",
+   "cognome": "Auci",
+   "organizzazione": "",
+   "ruolo": "Scrittrice",
+   "email": "",
+   "telefono": "",
+   "note": "Indicata come ospite in attesa di conferma nella relazione di marzo; non presente nel programma attuale.",
+   "eventi": [],
+   "creato": "2026-10-13",
+   "aggiornato": "2026-10-13",
+   "categoria": "altri",
+   "provenienza": "Relazione progettuale"
+  },
+  "mv6fk95wbbm49und": {
+   "nome": "Loredana",
+   "cognome": "Cacicia",
+   "organizzazione": "RAI, TGR Sicilia",
+   "ruolo": "Giornalista",
+   "email": "",
+   "telefono": "331 170 4033",
+   "categoria": "giornalisti",
+   "provenienza": "Contatto diretto",
+   "note": "",
+   "eventi": [],
+   "aggiornato": "2026-10-13",
+   "creato": "2026-10-13"
+  },
+  "mv6ftd6sxak6hpah": {
+   "nome": "Giovanni",
+   "cognome": "Giardina",
+   "organizzazione": "IRVO",
+   "ruolo": "Enologo e funzionario dell'IRVO",
+   "email": "giovanni.giardina@regione.sicilia.it",
+   "telefono": "-",
+   "categoria": "altri",
+   "provenienza": "Contatto diretto",
+   "note": "Numero di telefono da aggiungere",
+   "eventi": [],
+   "aggiornato": "2026-10-13",
+   "creato": "2026-10-13"
+  },
+  "mv6fx6j0gqpyp0b6": {
+   "nome": "Giovanni",
+   "cognome": "Marrone",
+   "organizzazione": "Università degli Studi di Palermo",
+   "ruolo": "Professore ordinario di Semiotica",
+   "email": "gianfranco.marrone@unipa.it",
+   "telefono": "333 469 5113 / 09123896305",
+   "categoria": "giornalisti",
+   "provenienza": "Contatto diretto",
+   "note": "Lavora nel campo della sociosemiotica, occupandosi di tematiche legate alla spazialità urbana, al cibo e all’alimentazione, ai media, alla politica, alla pubblicità, al giornalismo. È interessato al rapporto tra semiotica, estetica, sensorialità e corpo. Si occupa di comunicazione, estetica, teoria e analisi letteraria dal punto di vista della filosofia del linguaggio e della teoria della significazione.",
+   "eventi": [],
+   "aggiornato": "2026-10-13",
+   "creato": "2026-10-13"
+  },
+  "mv6gbz6boipspgko": {
+   "nome": "Christian",
+   "cognome": "Guzzardi",
+   "organizzazione": "Parco Villa Filippina (Palermo), Digital Makers",
+   "ruolo": "Event e Sponsorship Manager, Client Director",
+   "email": "info@christianguzzardi.it",
+   "telefono": "339 723 2125",
+   "categoria": "altri",
+   "provenienza": "Contatto diretto",
+   "note": "Pubblicista per Cronache di gusto e La Sicilia.",
+   "eventi": [],
+   "aggiornato": "2026-10-13",
+   "creato": "2026-10-13"
+  },
+  "mv6gircrlys5z5j4": {
+   "nome": "Patrizia",
+   "cognome": "Di Dio",
+   "organizzazione": "La Vie En Rose, Presidente ConfCommercio Palermo",
+   "ruolo": "Proprietaria e Amministratrice delegata, Presidente",
+   "email": "patriziadidio@lavieenrose.it",
+   "telefono": "091 6912015 (ufficio)",
+   "categoria": "imprese",
+   "provenienza": "Contatto diretto",
+   "note": "",
+   "eventi": [],
+   "aggiornato": "2026-10-13",
+   "creato": "2026-10-13"
+  },
+  "mv6gljcr0b4mjkof": {
+   "nome": "Laura",
+   "cognome": "Martino",
+   "organizzazione": "Content Creator",
+   "ruolo": "",
+   "email": "info.lauramartino@gmail.com",
+   "telefono": "-",
+   "categoria": "altri",
+   "provenienza": "Contatto diretto",
+   "note": "",
+   "eventi": [],
+   "aggiornato": "2026-10-13",
+   "creato": "2026-10-13"
+  },
+  "mv6joivy4vt4i4vm": {
+   "nome": "Giuseppina",
+   "cognome": "Messina",
+   "organizzazione": "Giornalista e addetta stampa / Donne del vino",
+   "ruolo": "Ufficio stampa",
+   "email": "",
+   "telefono": "380 599 2010",
+   "categoria": "giornalisti",
+   "provenienza": "Contatto diretto",
+   "note": "Scrive per SicilyMag, Sicilia da Gustare e Diario di Sicilia",
+   "eventi": [],
+   "aggiornato": "2026-10-13",
+   "creato": "2026-10-13"
+  },
+  "mv6jvuha6f6csbl2": {
+   "nome": "Giuseppe",
+   "cognome": "Forello",
+   "organizzazione": "MEC Restaurant",
+   "ruolo": "CEO",
+   "email": "giuseppe_forello@mac.com / info@mecrestaurant.it",
+   "telefono": "091 9891901 / 347 7532005 (MEC)",
+   "categoria": "imprese",
+   "provenienza": "Contatto diretto",
+   "note": "",
+   "eventi": [],
+   "aggiornato": "2026-10-13",
+   "creato": "2026-10-13"
+  }
+ },
+ "invites": {
+  "florio-marsala-tonno-2026__carrera-fabrizio": {
+   "eventId": "florio-marsala-tonno-2026",
+   "contactId": "carrera-fabrizio",
+   "stato": "confermato",
+   "ruoloEvento": "Moderatore",
+   "dataInvito": "2026-10-09",
+   "dataSollecito": "",
+   "dataRisposta": "2026-10-09",
+   "accompagnatori": 0,
+   "presente": false,
+   "note": "Lettera con programma preliminare del 9/10; chiesto contributo sull'impostazione del talk."
+  },
+  "florio-marsala-tonno-2026__magnisi-roberto": {
+   "eventId": "florio-marsala-tonno-2026",
+   "contactId": "magnisi-roberto",
+   "stato": "confermato",
+   "ruoloEvento": "Relatore",
+   "dataInvito": "2026-10-09",
+   "dataSollecito": "",
+   "dataRisposta": "2026-10-09",
+   "accompagnatori": 0,
+   "presente": false,
+   "note": "Attesa risposta sulla fornitura di Marsala per la degustazione."
+  },
+  "florio-marsala-tonno-2026__maniscalco-danilo": {
+   "eventId": "florio-marsala-tonno-2026",
+   "contactId": "maniscalco-danilo",
+   "stato": "confermato",
+   "ruoloEvento": "Relatore",
+   "dataInvito": "2026-10-09",
+   "dataSollecito": "",
+   "dataRisposta": "2026-10-09",
+   "accompagnatori": 0,
+   "presente": false,
+   "note": "Titolo proposto: La Palermo dei Florio: impresa, arte, Liberty e modernità (12 min)."
+  },
+  "florio-marsala-tonno-2026__requirez-salvatore": {
+   "eventId": "florio-marsala-tonno-2026",
+   "contactId": "requirez-salvatore",
+   "stato": "confermato",
+   "ruoloEvento": "Relatore",
+   "dataInvito": "",
+   "dataSollecito": "",
+   "dataRisposta": "",
+   "accompagnatori": 0,
+   "presente": false,
+   "note": "Disponibilità indicata nel programma; verificare l'invio della lettera di conferma."
+  },
+  "florio-marsala-tonno-2026__nino-castiglione": {
+   "eventId": "florio-marsala-tonno-2026",
+   "contactId": "nino-castiglione",
+   "stato": "confermato",
+   "ruoloEvento": "Relatore",
+   "dataInvito": "",
+   "dataSollecito": "",
+   "dataRisposta": "",
+   "accompagnatori": 0,
+   "presente": false,
+   "note": "Disponibilità dell'azienda; rappresentante da definire."
+  },
+  "florio-marsala-tonno-2026__mv6joivy4vt4i4vm": {
+   "eventId": "florio-marsala-tonno-2026",
+   "contactId": "mv6joivy4vt4i4vm",
+   "stato": "confermato",
+   "ruoloEvento": "Stampa",
+   "dataInvito": "",
+   "dataSollecito": "",
+   "dataRisposta": "2026-10-13",
+   "accompagnatori": 0,
+   "presente": false,
+   "note": ""
+  }
+ }
+};/*SEED-END*/
+
+/* ---------- archivio locale: usato quando la pagina è aperta fuori da Claude ---------- */
+/* Versione del codice e dei dati predefiniti: va incrementata a ogni nuova consegna del file.
+   Se il browser ha dati salvati con una versione diversa, vengono sostituiti dai dati predefiniti
+   di questa versione; i dati precedenti restano in una copia di sicurezza ripristinabile. */
+const APP_VERSION=/*VER*/"2026.10.13-1350"/*VER*/;
+
+/* Genera una copia del file con i dati attuali incorporati come dati predefiniti e una nuova versione */
+function buildUpdatedFile(){
+  const M1="/*SEED-"+"START*/",M2="/*SEED-"+"END*/";
+  const s=SOURCE_HTML.indexOf(M1),e=SOURCE_HTML.indexOf(M2);
+  if(s<0||e<0)throw new Error("marcatori mancanti");
+  const n=new Date(),p=x=>String(x).padStart(2,"0");
+  const ver=n.getFullYear()+"."+p(n.getMonth()+1)+"."+p(n.getDate())+"-"+p(n.getHours())+p(n.getMinutes());
+  const json=JSON.stringify(S.db.exportData(),null,1).replace(/</g,"\\u003c");
+  let html=SOURCE_HTML.slice(0,s)+M1+"const SEED="+json+";"+SOURCE_HTML.slice(e);
+  const re=new RegExp("/\\*V"+"ER\\*/\"[^\"]*\"/\\*V"+"ER\\*/");
+  html=html.replace(re,"/*V"+"ER*/\""+ver+"\"/*V"+"ER*/");
+  return{html,ver};
+}
+/* Archivio in memoria: fuori da Claude la pagina parte sempre dai dati scritti nel codice (SEED)
+   e non salva nulla nel browser. Le modifiche diventano permanenti solo scaricando il file aggiornato. */
+function makeMemoryDB(seed){
+  const clone=o=>JSON.parse(JSON.stringify(o));
+  let data=clone(seed);
+  const listeners=[];
+  const changed=()=>{S.dirty=true;updateDirty();listeners.slice().forEach(l=>l())};
+  const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+  const snap=(id,b)=>({id,exists:!!b,data:()=>b?clone(b):undefined});
+  const listen=(emit)=>{listeners.push(emit);setTimeout(emit,0);return()=>{const i=listeners.indexOf(emit);if(i>=0)listeners.splice(i,1)}};
+  function docRef(col,id){return{id,
+    async get(){return snap(id,(data[col]||{})[id])},
+    async set(v){(data[col]=data[col]||{})[id]=clone(v);changed()},
+    async update(v){const c=data[col]||{};if(!c[id])throw{code:"invalid_argument",message:"Documento inesistente"};c[id]={...c[id],...clone(v)};changed()},
+    async delete(){if(data[col])delete data[col][id];changed()},
+    onSnapshot(fn){return listen(()=>fn(snap(id,(data[col]||{})[id])))}}}
+  function colRef(col){return{
+    doc:id=>docRef(col,id||uid()),
+    onSnapshot(fn){return listen(()=>{const docs=Object.entries(data[col]||{}).map(([id,b])=>snap(id,b));fn({docs,size:docs.length,empty:!docs.length})})}}}
+  return{local:true,collection:colRef,doc:p=>{const [c,i]=p.split("/");return docRef(c,i)},
+    exportData:()=>clone(data),importData:d=>{data=clone(d);changed()}};
+}
+function updateDirty(){const el=$("#dirty-flag");if(el)el.hidden=!S.dirty}
+window.addEventListener("beforeunload",e=>{if(S.dirty){e.preventDefault();e.returnValue=""}});
+
+/* Recupero una tantum dei dati inseriti con le versioni precedenti, che li salvavano nel browser.
+   Legge soltanto: non scrive né cancella nulla. */
+function oldBrowserData(){
+  let d=null;
+  try{d=JSON.parse(localStorage.getItem("sf-rubrica-dati-v1"))}catch(_){}
+  if(!d||!d.contacts){try{const p=JSON.parse(localStorage.getItem("sf-rubrica-dati-precedenti"));d=p&&p.dati}catch(_){}}
+  if(!d||!d.contacts)return null;
+  return JSON.stringify(d)===JSON.stringify(SEED)?null:d;
+}
+function showRecoverNotice(){
+  $("#notice").innerHTML=`<div class="notice"><strong>In questo browser ci sono dati inseriti con una versione precedente del file.</strong> Puoi caricarli nella rubrica e poi scaricare il file aggiornato da pubblicare.
+  <div class="toolbar" style="margin:10px 0 0"><button class="btn small" data-act="recover">Carica i dati salvati nel browser</button><button class="btn small" data-act="prev-close">Ignora</button></div></div>`;
+}
+
 (async function boot(){
   const h=(location.hash||"").slice(1);if(["report","inviti","contatti","eventi"].includes(h))S.tab=h;
   render();
-  const db=window.claude?await window.claude.use("db"):null;
-  if(!db){$("#view").innerHTML=`<div class="empty"><strong>Rubrica non disponibile qui</strong>Apri la pagina da claude.ai con il tuo account per consultare e aggiornare i contatti.</div>`;return}
+  let db=null;
+  if(window.claude&&typeof window.claude.use==="function"){try{db=await window.claude.use("db")}catch(_){db=null}}
+  if(!db){
+    db=makeMemoryDB(SEED);S.dirty=false;$("#local-bar").hidden=false;$("#app-ver").textContent="Dati aggiornati alla versione "+APP_VERSION+".";
+    if(oldBrowserData())showRecoverNotice();
+  }
   S.db=db;
-  try{const u=await window.claude.use("user");if(u){const c=await u.can("data.write");if(c===false)S.canWrite=false}}catch(_){}
+  if(!db.local)try{const u=await window.claude.use("user");if(u){const c=await u.can("data.write");if(c===false)S.canWrite=false}}catch(_){}
   sub("contacts","contacts");sub("events","events");sub("invites","invites");sub("reports","reports");
   db.doc("settings/main").onSnapshot(d=>{S.settings={...DEF_SETTINGS,...(d.exists?d.data():{})};requestRender()},()=>{});
 })();
-</script>
-
-</body></html>
+</script></body></html>
