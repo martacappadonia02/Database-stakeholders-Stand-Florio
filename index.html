@@ -175,10 +175,8 @@ ul.plain li:last-child{border-bottom:0}
     </div>
   </header>
   <div class="toolbar" id="local-bar" hidden style="margin-top:12px">
-    <span class="hint grow">I dati sono salvati in questo browser. Esporta un backup periodicamente o per trasferirli su un altro computer. <span id="app-ver"></span></span>
-    <button class="btn small primary" data-act="build-file">Crea file aggiornato da condividere</button>
-    <button class="btn small" data-act="backup-export">Esporta backup</button>
-    <label class="btn small" for="backup-in">Ripristina backup</label><input type="file" id="backup-in" accept=".json,application/json" hidden>
+    <span class="hint grow"><span id="app-ver"></span> Le modifiche fatte qui non vengono salvate: per renderle visibili a tutti scarica il file aggiornato e caricalo su GitHub al posto del precedente. <strong id="dirty-flag" hidden style="color:var(--warn)">Ci sono modifiche non ancora scaricate.</strong></span>
+    <button class="btn small primary" data-act="build-file">Scarica il file aggiornato</button>
   </div>
   <nav class="tabs" role="tablist" id="tabs">
     <button role="tab" data-tab="report">Report settimanale</button>
@@ -224,8 +222,6 @@ function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMo
 function days(a,b){if(!a||!b)return null;const pa=a.split("-").map(Number),pb=b.split("-").map(Number);return Math.round((Date.UTC(pb[0],pb[1]-1,pb[2])-Date.UTC(pa[0],pa[1]-1,pa[2]))/864e5)}
 function fmt(s,long){if(!s)return"—";const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("it-IT",long?{day:"numeric",month:"long",year:"numeric"}:{day:"numeric",month:"short"})}
 function fullName(c){return [c.nome,c.cognome].filter(Boolean).join(" ")||c.organizzazione||"(senza nome)"}
-function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
-function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function toast(m){const r=$("#toast-root");r.innerHTML=`<div class="toast" role="status">${esc(m)}</div>`;clearTimeout(toast.t);toast.t=setTimeout(()=>r.innerHTML="",3200)}
 function errMsg(e){const c=e&&e.code;if(c==="invalid_argument")return"Non hai i permessi per modificare la rubrica.";if(c==="quota_exceeded")return"Spazio del database esaurito: elimina contatti non più utili.";if(c==="resource_exhausted")return"Troppe modifiche ravvicinate: riprova tra qualche secondo.";return"Modifica non salvata. Riprova."}
 async function w(fn){try{await fn();return true}catch(e){if(e&&e.code==="unavailable"){await new Promise(r=>setTimeout(r,600+Math.random()*600));try{await fn();return true}catch(e2){toast(errMsg(e2));return false}}toast(errMsg(e));return false}}
@@ -581,21 +577,18 @@ document.addEventListener("click",async e=>{
   else if(a==="save-report")saveReport();
   else if(a==="csv-contatti")csvContatti();
   else if(a==="csv-inviti")csvInviti();
-  else if(a==="prev-download"){const p=previousData();if(p)saveFile("rubrica-stand-florio-dati-precedenti-"+p.data+".json",JSON.stringify(p.dati,null,2),"application/json")}
-  else if(a==="prev-restore"){if(rmArmed!=="prev"){rmArmed="prev";t.textContent="Conferma ripristino";return}rmArmed=null;const p=previousData();if(p&&p.dati&&S.db.importData){S.db.importData(p.dati);$("#notice").innerHTML="";toast("Dati precedenti ripristinati")}}
   else if(a==="prev-close")$("#notice").innerHTML="";
+  else if(a==="recover"){const d=oldBrowserData();if(d&&S.db.importData){S.db.importData(d);$("#notice").innerHTML="";toast("Dati caricati: ora scarica il file aggiornato")}}
   else if(a==="build-file"&&S.db.exportData){
-    try{const r=buildUpdatedFile();lsSet(KEY_VER,r.ver);await saveFile("Rubrica-Stand-Florio-"+r.ver+".html",r.html,"text/html;charset=utf-8");
-      $("#notice").innerHTML=`<div class="notice"><strong>File aggiornato creato (versione ${esc(r.ver)}).</strong> Contiene tutti i dati presenti ora nella rubrica. Invialo ai colleghi e usa d'ora in poi questo file al posto del precedente: chi lo apre vedrà questi dati, anche se aveva una copia più vecchia. <button class="btn small" data-act="prev-close" style="margin-left:6px">Chiudi</button></div>`}
+    try{const r=buildUpdatedFile();await saveFile("Rubrica-Stand-Florio-"+r.ver+".html",r.html,"text/html;charset=utf-8");
+      S.dirty=false;updateDirty();$("#notice").innerHTML=`<div class="notice"><strong>File aggiornato creato (versione ${esc(r.ver)}).</strong> Contiene tutti i dati presenti ora nella rubrica. Caricalo su GitHub al posto del file precedente, con lo stesso nome (per esempio index.html): da quel momento chiunque apra il link vedrà questi dati. <button class="btn small" data-act="prev-close" style="margin-left:6px">Chiudi</button></div>`}
     catch(_){toast("Non è stato possibile creare il file aggiornato.")}}
-  else if(a==="backup-export"&&S.db.exportData)saveFile("rubrica-stand-florio-backup-"+todayStr()+".json",JSON.stringify(S.db.exportData(),null,2),"application/json");
 });
 document.addEventListener("change",async e=>{
   const el=e.target;
-  if(el.id==="evsel"){S.eventId=el.value;lsSet("sf-ev",el.value);render();return}
+  if(el.id==="evsel"){S.eventId=el.value;render();return}
   if(el.id==="f-cat"){S.cat=el.value;render();return}
   if(el.id==="csv-in"&&el.files[0]){importCSV(el.files[0]);el.value="";return}
-  if(el.id==="backup-in"&&el.files[0]&&S.db.importData){try{const d=JSON.parse(await el.files[0].text());if(!d||typeof d!=="object"||!d.contacts)throw 0;S.db.importData(d);toast("Backup ripristinato")}catch(_){toast("Il file non è un backup valido della rubrica.")}el.value="";return}
   if(el.id==="add-cat"){filterAdd();return}
   if(el.name==="add-c"){countAdd();return}
   if(el.dataset.set){const v=parseFloat(el.value);if(isNaN(v))return;const ns={...S.settings,[el.dataset.set]:v};await w(()=>S.db.doc("settings/main").set(ns));return}
@@ -618,7 +611,6 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#sheet-root").in
 /* ---------- avvio ---------- */
 function pickEvent(){
   if(S.eventId&&eventById(S.eventId))return;
-  const saved=lsGet("sf-ev");if(saved&&eventById(saved)){S.eventId=saved;return}
   const t=todayStr(),evs=[...S.events].sort((a,b)=>(a.data||"").localeCompare(b.data||""));
   const next=evs.find(e=>e.data>=t)||evs[evs.length-1];S.eventId=next?next.id:null;
 }
@@ -659,7 +651,7 @@ const I0=(cid,o)=>({eventId:EV,contactId:cid,stato:"da_invitare",ruoloEvento:"Os
 /* Versione del codice e dei dati predefiniti: va incrementata a ogni nuova consegna del file.
    Se il browser ha dati salvati con una versione diversa, vengono sostituiti dai dati predefiniti
    di questa versione; i dati precedenti restano in una copia di sicurezza ripristinabile. */
-const APP_VERSION=/*VER*/"2026.10.13-6"/*VER*/;
+const APP_VERSION=/*VER*/"2026.10.13-7"/*VER*/;
 
 /* Genera una copia del file con i dati attuali incorporati come dati predefiniti e una nuova versione */
 function buildUpdatedFile(){
@@ -674,49 +666,43 @@ function buildUpdatedFile(){
   html=html.replace(re,"/*V"+"ER*/\""+ver+"\"/*V"+"ER*/");
   return{html,ver};
 }
-const KEY_DATI="sf-rubrica-dati-v1",KEY_VER="sf-rubrica-versione",KEY_PREC="sf-rubrica-dati-precedenti";
-function checkVersion(){
-  let saved=null,raw=null;
-  try{saved=localStorage.getItem(KEY_VER);raw=localStorage.getItem(KEY_DATI)}catch(_){return null}
-  if(saved===APP_VERSION)return null;
-  let info=null;
-  if(raw){
-    try{localStorage.setItem(KEY_PREC,JSON.stringify({versione:saved||"precedente",data:todayStr(),dati:JSON.parse(raw)}));info={from:saved||"precedente"}}catch(_){}
-    try{localStorage.removeItem(KEY_DATI);localStorage.removeItem("sf-ev")}catch(_){}
-  }
-  try{localStorage.setItem(KEY_VER,APP_VERSION)}catch(_){}
-  return info;
-}
-function previousData(){try{return JSON.parse(localStorage.getItem(KEY_PREC))}catch(_){return null}}
-
-function makeLocalDB(seed){
-  const KEY=KEY_DATI;
+/* Archivio in memoria: fuori da Claude la pagina parte sempre dai dati scritti nel codice (SEED)
+   e non salva nulla nel browser. Le modifiche diventano permanenti solo scaricando il file aggiornato. */
+function makeMemoryDB(seed){
   const clone=o=>JSON.parse(JSON.stringify(o));
-  let data=null;try{data=JSON.parse(localStorage.getItem(KEY))}catch(_){}
-  if(!data||typeof data!=="object"||!data.contacts){data=clone(seed);try{localStorage.setItem(KEY,JSON.stringify(data))}catch(_){}}
+  let data=clone(seed);
   const listeners=[];
-  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(data))}catch(_){}};
-  const notify=()=>listeners.slice().forEach(l=>l());
+  const changed=()=>{S.dirty=true;updateDirty();listeners.slice().forEach(l=>l())};
   const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,10);
   const snap=(id,b)=>({id,exists:!!b,data:()=>b?clone(b):undefined});
   const listen=(emit)=>{listeners.push(emit);setTimeout(emit,0);return()=>{const i=listeners.indexOf(emit);if(i>=0)listeners.splice(i,1)}};
   function docRef(col,id){return{id,
     async get(){return snap(id,(data[col]||{})[id])},
-    async set(v){(data[col]=data[col]||{})[id]=clone(v);persist();notify()},
-    async update(v){const c=data[col]||{};if(!c[id])throw{code:"invalid_argument",message:"Documento inesistente"};c[id]={...c[id],...clone(v)};persist();notify()},
-    async delete(){if(data[col])delete data[col][id];persist();notify()},
+    async set(v){(data[col]=data[col]||{})[id]=clone(v);changed()},
+    async update(v){const c=data[col]||{};if(!c[id])throw{code:"invalid_argument",message:"Documento inesistente"};c[id]={...c[id],...clone(v)};changed()},
+    async delete(){if(data[col])delete data[col][id];changed()},
     onSnapshot(fn){return listen(()=>fn(snap(id,(data[col]||{})[id])))}}}
   function colRef(col){return{
     doc:id=>docRef(col,id||uid()),
     onSnapshot(fn){return listen(()=>{const docs=Object.entries(data[col]||{}).map(([id,b])=>snap(id,b));fn({docs,size:docs.length,empty:!docs.length})})}}}
-  window.addEventListener("storage",e=>{if(e.key===KEY){try{const d=JSON.parse(e.newValue);if(d&&d.contacts){data=d;notify()}}catch(_){}}});
   return{local:true,collection:colRef,doc:p=>{const [c,i]=p.split("/");return docRef(c,i)},
-    exportData:()=>clone(data),importData:d=>{data=clone(d);persist();notify()}};
+    exportData:()=>clone(data),importData:d=>{data=clone(d);changed()}};
 }
+function updateDirty(){const el=$("#dirty-flag");if(el)el.hidden=!S.dirty}
+window.addEventListener("beforeunload",e=>{if(S.dirty){e.preventDefault();e.returnValue=""}});
 
-function showVersionNotice(from){
-  $("#notice").innerHTML=`<div class="notice"><strong>Il file è stato aggiornato alla versione ${esc(APP_VERSION)}.</strong> La rubrica è stata ricaricata con i dati inclusi in questa versione. I dati che avevi salvato con la versione ${esc(from)} sono conservati in una copia di sicurezza.
-  <div class="toolbar" style="margin:10px 0 0"><button class="btn small" data-act="prev-download">Scarica i dati precedenti</button><button class="btn small" data-act="prev-restore">Ripristina i dati precedenti</button><button class="btn small" data-act="prev-close">Chiudi</button></div></div>`;
+/* Recupero una tantum dei dati inseriti con le versioni precedenti, che li salvavano nel browser.
+   Legge soltanto: non scrive né cancella nulla. */
+function oldBrowserData(){
+  let d=null;
+  try{d=JSON.parse(localStorage.getItem("sf-rubrica-dati-v1"))}catch(_){}
+  if(!d||!d.contacts){try{const p=JSON.parse(localStorage.getItem("sf-rubrica-dati-precedenti"));d=p&&p.dati}catch(_){}}
+  if(!d||!d.contacts)return null;
+  return JSON.stringify(d)===JSON.stringify(SEED)?null:d;
+}
+function showRecoverNotice(){
+  $("#notice").innerHTML=`<div class="notice"><strong>In questo browser ci sono dati inseriti con una versione precedente del file.</strong> Puoi caricarli nella rubrica e poi scaricare il file aggiornato da pubblicare.
+  <div class="toolbar" style="margin:10px 0 0"><button class="btn small" data-act="recover">Carica i dati salvati nel browser</button><button class="btn small" data-act="prev-close">Ignora</button></div></div>`;
 }
 
 (async function boot(){
@@ -725,9 +711,8 @@ function showVersionNotice(from){
   let db=null;
   if(window.claude&&typeof window.claude.use==="function"){try{db=await window.claude.use("db")}catch(_){db=null}}
   if(!db){
-    const changed=checkVersion();
-    db=makeLocalDB(SEED);$("#local-bar").hidden=false;$("#app-ver").textContent="Versione "+APP_VERSION+".";
-    if(changed)showVersionNotice(changed.from);
+    db=makeMemoryDB(SEED);S.dirty=false;$("#local-bar").hidden=false;$("#app-ver").textContent="Dati aggiornati alla versione "+APP_VERSION+".";
+    if(oldBrowserData())showRecoverNotice();
   }
   S.db=db;
   if(!db.local)try{const u=await window.claude.use("user");if(u){const c=await u.can("data.write");if(c===false)S.canWrite=false}}catch(_){}
