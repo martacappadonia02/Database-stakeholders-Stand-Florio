@@ -1,9 +1,7 @@
-<!doctype html>
-<html lang="it">
-<head>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Rubrica Stand Florio</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Rubrica Stand Florio</title>
 <style>
 /* Layout: barra evento in alto, quattro schede (Report · Inviti · Contatti · Eventi), tabelle operative a tutta larghezza */
 :root{
@@ -66,6 +64,15 @@ textarea{width:100%;min-height:80px;resize:vertical}
 
 /* tabelle */
 .tbl-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+/* elenchi lunghi: area con altezza fissa, così la barra di scorrimento orizzontale resta sempre visibile */
+.tbl-wrap.scroll{overflow:auto;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px);min-height:260px;overscroll-behavior:contain}
+.tbl-wrap.scroll table{border-collapse:separate;border-spacing:0}
+.tbl-wrap.scroll thead th{position:sticky;top:0;z-index:2}
+@media (min-width:700px){
+  .tbl-wrap.scroll th:first-child,.tbl-wrap.scroll td:first-child{position:sticky;left:0;z-index:1;background:var(--surface);box-shadow:1px 0 0 var(--line);min-width:220px}
+  .tbl-wrap.scroll thead th:first-child{z-index:3;background:var(--sunk)}
+}
+.scroll-nav{display:flex;gap:6px;align-items:center}
 table{border-collapse:collapse;width:100%}
 th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;background:var(--sunk);white-space:nowrap}
@@ -150,8 +157,6 @@ ul.plain li:last-child{border-bottom:0}
 @media (max-width:560px){.brand h1{font-size:23px}.frow{grid-template-columns:110px minmax(0,1fr) 40px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
-</head>
-<body>
 
 <div class="wrap" id="app">
   <header class="top">
@@ -255,7 +260,9 @@ function render(){
   const v=$("#view");
   if(!S.db){return}
   if(!S.loaded.contacts||!S.loaded.events||!S.loaded.invites){v.innerHTML=`<div class="empty"><strong>Caricamento della rubrica…</strong>I contatti e lo stato degli inviti compariranno qui.</div>`;return}
+  const old=v.querySelector(".tbl-wrap.scroll"),pos=old?{id:old.id,l:old.scrollLeft,t:old.scrollTop}:null;
   v.innerHTML=({report:viewReport,inviti:viewInviti,contatti:viewContatti,eventi:viewEventi}[S.tab]||viewReport)();
+  const nw=v.querySelector(".tbl-wrap.scroll");if(pos&&nw&&nw.id===pos.id){nw.scrollLeft=pos.l;nw.scrollTop=pos.t}
 }
 
 function noEvent(){return`<div class="empty"><strong>Nessun evento registrato</strong>Crea il primo evento nella scheda Eventi per iniziare a tracciare gli inviti.</div>`}
@@ -335,13 +342,14 @@ function viewInviti(){
   return`
   <div class="toolbar">
     <div class="grow"><input type="search" id="q-inv" placeholder="Cerca per nome, ente, email" value="${esc(S.q)}" aria-label="Cerca negli inviti"></div>
+    <span class="scroll-nav"><button class="btn small" data-act="scroll-l" aria-label="Scorri a sinistra">◀</button><button class="btn small" data-act="scroll-r" aria-label="Scorri a destra">▶</button></span>
     <button class="btn primary w" data-act="open-add">Aggiungi contatti all'evento</button>
   </div>
   <div class="chips" style="margin-bottom:14px">
     <button class="chip" data-stato="" aria-pressed="${!S.stato}">Tutti · ${all.length}</button>
     ${STATI.map(s=>`<button class="chip" data-stato="${s.k}" aria-pressed="${S.stato===s.k}">${s.l} · ${counts[s.k]}</button>`).join("")}
   </div>
-  ${all.length?`<div class="tbl-wrap"><table><thead><tr><th>Contatto</th><th>Ruolo nell'evento</th><th>Stato</th><th>Invito</th><th>Sollecito</th><th>Risposta</th><th>Accomp.</th><th>Presente</th><th>Note</th><th class="w"></th></tr></thead><tbody>
+  ${all.length?`<div class="tbl-wrap scroll" id="scroll-inviti"><table><thead><tr><th>Contatto</th><th>Ruolo nell'evento</th><th>Stato</th><th>Invito</th><th>Sollecito</th><th>Risposta</th><th>Accomp.</th><th>Presente</th><th>Note</th><th class="w"></th></tr></thead><tbody>
   ${rows.map(i=>{const c=contactById(i.contactId);const ref=i.stato==="sollecitato"?i.dataSollecito:i.dataInvito;const d=days(ref,today);const due=(i.stato==="invitato"||i.stato==="sollecitato")&&(ref==null||d>=soglia);
    return`<tr data-inv="${esc(i.id)}">
     <td><strong>${esc(fullName(c))}</strong><span class="sub">${esc([c.organizzazione,c.ruolo].filter(Boolean).join(" · "))}</span><span class="cat">${esc(catLabel(c.categoria))}</span>${due?`<span class="flag">Da sollecitare${d!=null?" · "+d+" gg":""}</span>`:""}</td>
@@ -368,11 +376,12 @@ function viewContatti(){
   <div class="toolbar">
     <div class="grow"><input type="search" id="q-con" placeholder="Cerca per nome, ente, email, note" value="${esc(S.q)}" aria-label="Cerca nei contatti"></div>
     <select id="f-cat" aria-label="Filtra per categoria"><option value="">Tutte le categorie</option>${CATS.map(c=>`<option value="${c.k}"${S.cat===c.k?" selected":""}>${c.l} (${S.contacts.filter(x=>x.categoria===c.k).length})</option>`).join("")}</select>
+    <span class="scroll-nav"><button class="btn small" data-act="scroll-l" aria-label="Scorri a sinistra">◀</button><button class="btn small" data-act="scroll-r" aria-label="Scorri a destra">▶</button></span>
     <button class="btn primary w" data-act="new-contact">Nuovo contatto</button>
     <label class="btn w" for="csv-in">Importa CSV</label><input type="file" id="csv-in" accept=".csv,text/csv" hidden>
     <button class="btn" data-act="csv-contatti">Scarica CSV</button>
   </div>
-  ${S.contacts.length?`<div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Organizzazione · ruolo</th><th>Email · telefono</th><th>Categoria</th><th>Provenienza</th><th>Eventi a cui ha partecipato</th><th>Note</th><th class="w"></th></tr></thead><tbody>
+  ${S.contacts.length?`<div class="tbl-wrap scroll" id="scroll-contatti"><table><thead><tr><th>Nome</th><th>Organizzazione · ruolo</th><th>Email · telefono</th><th>Categoria</th><th>Provenienza</th><th>Eventi a cui ha partecipato</th><th>Note</th><th class="w"></th></tr></thead><tbody>
   ${rows.map(c=>`<tr>
     <td><strong>${esc(fullName(c))}</strong></td>
     <td>${esc(c.organizzazione||"—")}<span class="sub">${esc(c.ruolo||"")}</span></td>
@@ -547,7 +556,8 @@ document.addEventListener("click",async e=>{
   if(t.dataset.tab){S.tab=t.dataset.tab;S.q="";S.stato="";try{history.replaceState(null,"","#"+S.tab)}catch(_){}render();return}
   if(t.hasAttribute("data-stato")&&!t.dataset.act){S.stato=t.dataset.stato;render();return}
   const a=t.dataset.act,id=t.dataset.id;
-  if(a==="close-sheet")closeSheet();
+  if(a==="scroll-l"||a==="scroll-r"){const sc=document.querySelector("#view .tbl-wrap.scroll");if(sc)sc.scrollBy({left:(a==="scroll-r"?1:-1)*Math.round(sc.clientWidth*.6),behavior:"smooth"})}
+  else if(a==="close-sheet")closeSheet();
   else if(a==="new-contact")contactSheet(null);
   else if(a==="edit-contact")contactSheet(contactById(id));
   else if(a==="save-contact")saveContact();
@@ -670,5 +680,4 @@ function makeLocalDB(seed){
 })();
 </script>
 
-</body>
-</html>
+</body></html>
