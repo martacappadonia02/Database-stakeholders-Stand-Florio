@@ -172,7 +172,6 @@ ul.plain li:last-child{border-bottom:0}
       <label for="evsel">Evento</label>
       <select id="evsel"></select>
       <span class="countdown" id="countdown"></span>
-      <button class="btn small" data-act="build-file">Scarica file aggiornato</button>
     </div>
   </header>
     <nav class="tabs" role="tablist" id="tabs">
@@ -188,8 +187,6 @@ ul.plain li:last-child{border-bottom:0}
 <div id="toast-root"></div>
 
 <script>
-/* Copia del sorgente della pagina, catturata prima di qualsiasi modifica: serve a generare il file aggiornato */
-const SOURCE_HTML="<!doctype html>\n"+document.documentElement.outerHTML;
 const CATS=[
  {k:"giornalisti",l:"Giornalisti e testate"},
  {k:"istituzioni",l:"Istituzioni e PA"},
@@ -575,10 +572,6 @@ document.addEventListener("click",async e=>{
   else if(a==="csv-contatti")csvContatti();
   else if(a==="csv-inviti")csvInviti();
   else if(a==="prev-close")$("#notice").innerHTML="";
-  else if(a==="build-file"&&S.db.exportData){
-    try{const r=buildUpdatedFile();await saveFile("Rubrica-Stand-Florio-"+r.stamp+".html",r.html,"text/html;charset=utf-8");
-      S.dirty=false;updateDirty();$("#notice").innerHTML=`<div class="notice"><strong>File aggiornato creato.</strong> Contiene tutti i dati presenti ora nella rubrica. Caricalo su GitHub al posto del file precedente, con lo stesso nome (per esempio index.html): da quel momento chiunque apra il link vedrà questi dati. <button class="btn small" data-act="prev-close" style="margin-left:6px">Chiudi</button></div>`}
-    catch(_){toast("Non è stato possibile creare il file aggiornato.")}}
 });
 document.addEventListener("change",async e=>{
   const el=e.target;
@@ -614,55 +607,352 @@ function sub(col,key){
   return S.db.collection(col).onSnapshot(snap=>{S[key]=snap.docs.map(d=>({id:d.id,...d.data()}));if(key in S.loaded)S.loaded[key]=true;if(key==="events")pickEvent();requestRender()},
     err=>{$("#notice").innerHTML=`<div class="notice">La sincronizzazione si è interrotta. Ricarica la pagina per riprendere.</div>`});
 }
-/* ---------- dati predefiniti (stato al 13 ottobre 2026) ---------- */
-const EV="florio-marsala-tonno-2026";
-const C0=(o)=>({nome:"",cognome:"",organizzazione:"",ruolo:"",email:"",telefono:"",note:"",eventi:[],creato:"2026-10-13",aggiornato:"2026-10-13",...o});
-const I0=(cid,o)=>({eventId:EV,contactId:cid,stato:"da_invitare",ruoloEvento:"Ospite",dataInvito:"",dataSollecito:"",dataRisposta:"",accompagnatori:0,presente:false,note:"",...o});
-/*SEED-START*/const SEED={
-  events:{[EV]:{nome:"Florio. Marsala e Tonno",data:"2026-11-06",luogo:"Stand Florio, Via Messina Marine 40, Palermo"}},
-  settings:{main:{tasso:35,soglia:7,targetMin:70,targetMax:100}},
-  reports:{},
-  contacts:{
-    "carrera-fabrizio":C0({nome:"Fabrizio",cognome:"Carrera",organizzazione:"Cronache di Gusto",ruolo:"Giornalista",email:"info@cronachedigusto.it",categoria:"giornalisti",provenienza:"Contatto diretto",note:"Email generica di redazione: verificare un indirizzo diretto."}),
-    "magnisi-roberto":C0({nome:"Roberto",cognome:"Magnisi",organizzazione:"Duca di Salaparuta – Cantine Florio",ruolo:"Direttore delle Cantine",email:"info@duca.it",categoria:"imprese",provenienza:"Contatto diretto",note:"Email generica aziendale."}),
-    "maniscalco-danilo":C0({nome:"Danilo",cognome:"Maniscalco",ruolo:"Architetto e storico dell'arte",email:"danilomaniscalco@hotmail.it",categoria:"altri",provenienza:"Contatto diretto"}),
-    "requirez-salvatore":C0({nome:"Salvatore",cognome:"Requirez",ruolo:"Storico e scrittore",categoria:"altri",provenienza:"Contatto diretto",note:"Email e telefono da reperire."}),
-    "nino-castiglione":C0({organizzazione:"Nino Castiglione – Favignana",ruolo:"Rappresentante da individuare",email:"info@ninocastiglione.it",categoria:"imprese",provenienza:"Contatto diretto",note:"Nominativo del rappresentante e recapiti da definire."}),
-    "consorzio-marsala-doc":C0({organizzazione:"Consorzio di Tutela Vini Marsala DOC",categoria:"associazioni",provenienza:"Relazione progettuale",note:"Coinvolgimento previsto nella relazione progettuale; non presente nel programma del 9 ottobre."}),
-    "taormina-irene":C0({nome:"Irene",cognome:"Taormina",organizzazione:"Cantine Florio",ruolo:"On Trade Activation Manager",categoria:"imprese",provenienza:"Relazione progettuale",note:"Indicata come relatrice nella relazione di marzo; nel programma attuale interviene Roberto Magnisi."}),
-    "auci-stefania":C0({nome:"Stefania",cognome:"Auci",ruolo:"Scrittrice",categoria:"altri",provenienza:"Relazione progettuale",note:"Indicata come ospite in attesa di conferma nella relazione di marzo; non presente nel programma attuale."})
-  },
-  invites:{
-    [EV+"__carrera-fabrizio"]:I0("carrera-fabrizio",{stato:"confermato",ruoloEvento:"Moderatore",dataInvito:"2026-10-09",dataRisposta:"2026-10-09",note:"Lettera con programma preliminare del 9/10; chiesto contributo sull'impostazione del talk."}),
-    [EV+"__magnisi-roberto"]:I0("magnisi-roberto",{stato:"confermato",ruoloEvento:"Relatore",dataInvito:"2026-10-09",dataRisposta:"2026-10-09",note:"Attesa risposta sulla fornitura di Marsala per la degustazione."}),
-    [EV+"__maniscalco-danilo"]:I0("maniscalco-danilo",{stato:"confermato",ruoloEvento:"Relatore",dataInvito:"2026-10-09",dataRisposta:"2026-10-09",note:"Titolo proposto: La Palermo dei Florio: impresa, arte, Liberty e modernità (12 min)."}),
-    [EV+"__requirez-salvatore"]:I0("requirez-salvatore",{stato:"confermato",ruoloEvento:"Relatore",note:"Disponibilità indicata nel programma; verificare l'invio della lettera di conferma."}),
-    [EV+"__nino-castiglione"]:I0("nino-castiglione",{stato:"confermato",ruoloEvento:"Relatore",note:"Disponibilità dell'azienda; rappresentante da definire."}),
-    [EV+"__taormina-irene"]:I0("taormina-irene",{}),
-    [EV+"__auci-stefania"]:I0("auci-stefania",{})
+/* ---------- dati iniziali (stato al 16 ottobre 2026): usati al primo avvio in un browser ---------- */
+const SEED={
+ "events": {
+  "florio-marsala-tonno-2026": {
+   "data": "2026-11-06",
+   "luogo": "Stand Florio, Via Messina Marine 40, Palermo",
+   "nome": "Florio. Marsala e Tonno"
   }
-};/*SEED-END*/
+ },
+ "settings": {
+  "main": {
+   "soglia": 7,
+   "targetMax": 100,
+   "targetMin": 70,
+   "tasso": 35
+  }
+ },
+ "reports": {},
+ "contacts": {
+  "auci-stefania": {
+   "aggiornato": "2026-10-13",
+   "categoria": "altri",
+   "cognome": "Auci",
+   "creato": "2026-10-13",
+   "email": "",
+   "eventi": [],
+   "nome": "Stefania",
+   "note": "Indicata come ospite in attesa di conferma nella relazione di marzo; non presente nel programma attuale.",
+   "organizzazione": "",
+   "provenienza": "Relazione progettuale",
+   "ruolo": "Scrittrice",
+   "telefono": ""
+  },
+  "cacicia-loredana": {
+   "aggiornato": "2026-10-16",
+   "categoria": "giornalisti",
+   "cognome": "Cacicia",
+   "creato": "2026-10-16",
+   "email": "",
+   "eventi": [],
+   "nome": "Loredana",
+   "note": "",
+   "organizzazione": "RAI, TGR Sicilia",
+   "provenienza": "Contatto diretto",
+   "ruolo": "Giornalista",
+   "telefono": "331 170 4033"
+  },
+  "carrera-fabrizio": {
+   "aggiornato": "2026-10-13",
+   "categoria": "giornalisti",
+   "cognome": "Carrera",
+   "creato": "2026-10-13",
+   "email": "info@cronachedigusto.it",
+   "eventi": [],
+   "nome": "Fabrizio",
+   "note": "Email generica di redazione: verificare un indirizzo diretto.",
+   "organizzazione": "Cronache di Gusto",
+   "provenienza": "Contatto diretto",
+   "ruolo": "Giornalista",
+   "telefono": ""
+  },
+  "consorzio-marsala-doc": {
+   "aggiornato": "2026-10-13",
+   "categoria": "associazioni",
+   "cognome": "",
+   "creato": "2026-10-13",
+   "email": "",
+   "eventi": [],
+   "nome": "",
+   "note": "Coinvolgimento previsto nella relazione progettuale; non presente nel programma del 9 ottobre.",
+   "organizzazione": "Consorzio di Tutela Vini Marsala DOC",
+   "provenienza": "Relazione progettuale",
+   "ruolo": "",
+   "telefono": ""
+  },
+  "di-dio-patrizia": {
+   "aggiornato": "2026-10-16",
+   "categoria": "imprese",
+   "cognome": "Di Dio",
+   "creato": "2026-10-16",
+   "email": "patriziadidio@lavieenrose.it",
+   "eventi": [],
+   "nome": "Patrizia",
+   "note": "",
+   "organizzazione": "La Vie En Rose, Presidente ConfCommercio Palermo",
+   "provenienza": "Contatto diretto",
+   "ruolo": "Proprietaria e Amministratrice delegata, Presidente",
+   "telefono": "091 6912015 (ufficio)"
+  },
+  "forello-giuseppe": {
+   "aggiornato": "2026-10-16",
+   "categoria": "imprese",
+   "cognome": "Forello",
+   "creato": "2026-10-16",
+   "email": "giuseppe_forello@mac.com / info@mecrestaurant.it",
+   "eventi": [],
+   "nome": "Giuseppe",
+   "note": "",
+   "organizzazione": "MEC Restaurant",
+   "provenienza": "Contatto diretto",
+   "ruolo": "CEO",
+   "telefono": "091 9891901 / 347 7532005 (MEC)"
+  },
+  "giardina-giovanni": {
+   "aggiornato": "2026-10-16",
+   "categoria": "altri",
+   "cognome": "Giardina",
+   "creato": "2026-10-16",
+   "email": "giovanni.giardina@regione.sicilia.it",
+   "eventi": [],
+   "nome": "Giovanni",
+   "note": "Numero di telefono da aggiungere",
+   "organizzazione": "IRVO",
+   "provenienza": "Contatto diretto",
+   "ruolo": "Enologo e funzionario dell'IRVO",
+   "telefono": ""
+  },
+  "guzzardi-christian": {
+   "aggiornato": "2026-10-16",
+   "categoria": "altri",
+   "cognome": "Guzzardi",
+   "creato": "2026-10-16",
+   "email": "info@christianguzzardi.it",
+   "eventi": [],
+   "nome": "Christian",
+   "note": "Pubblicista per Cronache di gusto e La Sicilia.",
+   "organizzazione": "Parco Villa Filippina (Palermo), Digital Makers",
+   "provenienza": "Contatto diretto",
+   "ruolo": "Event e Sponsorship Manager, Client Director",
+   "telefono": "339 723 2125"
+  },
+  "magnisi-roberto": {
+   "aggiornato": "2026-10-13",
+   "categoria": "imprese",
+   "cognome": "Magnisi",
+   "creato": "2026-10-13",
+   "email": "info@duca.it",
+   "eventi": [],
+   "nome": "Roberto",
+   "note": "Email generica aziendale.",
+   "organizzazione": "Duca di Salaparuta – Cantine Florio",
+   "provenienza": "Contatto diretto",
+   "ruolo": "Direttore delle Cantine",
+   "telefono": ""
+  },
+  "maniscalco-danilo": {
+   "aggiornato": "2026-10-13",
+   "categoria": "altri",
+   "cognome": "Maniscalco",
+   "creato": "2026-10-13",
+   "email": "danilomaniscalco@hotmail.it",
+   "eventi": [],
+   "nome": "Danilo",
+   "note": "",
+   "organizzazione": "",
+   "provenienza": "Contatto diretto",
+   "ruolo": "Architetto e storico dell'arte",
+   "telefono": ""
+  },
+  "marrone-giovanni": {
+   "aggiornato": "2026-10-16",
+   "categoria": "giornalisti",
+   "cognome": "Marrone",
+   "creato": "2026-10-16",
+   "email": "gianfranco.marrone@unipa.it",
+   "eventi": [],
+   "nome": "Giovanni",
+   "note": "Lavora nel campo della sociosemiotica, occupandosi di tematiche legate alla spazialità urbana, al cibo e all’alimentazione, ai media, alla politica, alla pubblicità, al giornalismo. È interessato al rapporto tra semiotica, estetica, sensorialità e corpo. Si occupa di comunicazione, estetica, teoria e analisi letteraria dal punto di vista della filosofia del linguaggio e della teoria della significazione.",
+   "organizzazione": "Università degli Studi di Palermo",
+   "provenienza": "Contatto diretto",
+   "ruolo": "Professore ordinario di Semiotica",
+   "telefono": "333 469 5113 / 09123896305"
+  },
+  "martino-laura": {
+   "aggiornato": "2026-10-16",
+   "categoria": "altri",
+   "cognome": "Martino",
+   "creato": "2026-10-16",
+   "email": "info.lauramartino@gmail.com",
+   "eventi": [],
+   "nome": "Laura",
+   "note": "",
+   "organizzazione": "Content Creator",
+   "provenienza": "Contatto diretto",
+   "ruolo": "",
+   "telefono": ""
+  },
+  "messina-giuseppina": {
+   "aggiornato": "2026-10-16",
+   "categoria": "giornalisti",
+   "cognome": "Messina",
+   "creato": "2026-10-16",
+   "email": "",
+   "eventi": [],
+   "nome": "Giuseppina",
+   "note": "Scrive per SicilyMag, Sicilia da Gustare e Diario di Sicilia",
+   "organizzazione": "Giornalista e addetta stampa / Donne del vino",
+   "provenienza": "Contatto diretto",
+   "ruolo": "Ufficio stampa",
+   "telefono": "380 599 2010"
+  },
+  "nino-castiglione": {
+   "aggiornato": "2026-10-13",
+   "categoria": "imprese",
+   "cognome": "",
+   "creato": "2026-10-13",
+   "email": "info@ninocastiglione.it",
+   "eventi": [],
+   "nome": "",
+   "note": "Nominativo del rappresentante e recapiti da definire.",
+   "organizzazione": "Nino Castiglione – Favignana",
+   "provenienza": "Contatto diretto",
+   "ruolo": "Rappresentante da individuare",
+   "telefono": ""
+  },
+  "requirez-salvatore": {
+   "aggiornato": "2026-10-13",
+   "categoria": "altri",
+   "cognome": "Requirez",
+   "creato": "2026-10-13",
+   "email": "",
+   "eventi": [],
+   "nome": "Salvatore",
+   "note": "Email e telefono da reperire.",
+   "organizzazione": "",
+   "provenienza": "Contatto diretto",
+   "ruolo": "Storico e scrittore",
+   "telefono": ""
+  },
+  "taormina-irene": {
+   "aggiornato": "2026-10-13",
+   "categoria": "imprese",
+   "cognome": "Taormina",
+   "creato": "2026-10-13",
+   "email": "",
+   "eventi": [],
+   "nome": "Irene",
+   "note": "Indicata come relatrice nella relazione di marzo; nel programma attuale interviene Roberto Magnisi.",
+   "organizzazione": "Cantine Florio",
+   "provenienza": "Relazione progettuale",
+   "ruolo": "On Trade Activation Manager",
+   "telefono": ""
+  }
+ },
+ "invites": {
+  "florio-marsala-tonno-2026__auci-stefania": {
+   "accompagnatori": 0,
+   "contactId": "auci-stefania",
+   "dataInvito": "",
+   "dataRisposta": "",
+   "dataSollecito": "",
+   "eventId": "florio-marsala-tonno-2026",
+   "note": "",
+   "presente": false,
+   "ruoloEvento": "Ospite",
+   "stato": "da_invitare"
+  },
+  "florio-marsala-tonno-2026__carrera-fabrizio": {
+   "accompagnatori": 0,
+   "contactId": "carrera-fabrizio",
+   "dataInvito": "2026-10-09",
+   "dataRisposta": "2026-10-09",
+   "dataSollecito": "",
+   "eventId": "florio-marsala-tonno-2026",
+   "note": "Lettera con programma preliminare del 9/10; chiesto contributo sull'impostazione del talk.",
+   "presente": false,
+   "ruoloEvento": "Moderatore",
+   "stato": "confermato"
+  },
+  "florio-marsala-tonno-2026__magnisi-roberto": {
+   "accompagnatori": 0,
+   "contactId": "magnisi-roberto",
+   "dataInvito": "2026-10-09",
+   "dataRisposta": "2026-10-09",
+   "dataSollecito": "",
+   "eventId": "florio-marsala-tonno-2026",
+   "note": "Attesa risposta sulla fornitura di Marsala per la degustazione.",
+   "presente": false,
+   "ruoloEvento": "Relatore",
+   "stato": "confermato"
+  },
+  "florio-marsala-tonno-2026__maniscalco-danilo": {
+   "accompagnatori": 0,
+   "contactId": "maniscalco-danilo",
+   "dataInvito": "2026-10-09",
+   "dataRisposta": "2026-10-09",
+   "dataSollecito": "",
+   "eventId": "florio-marsala-tonno-2026",
+   "note": "Titolo proposto: La Palermo dei Florio: impresa, arte, Liberty e modernità (12 min).",
+   "presente": false,
+   "ruoloEvento": "Relatore",
+   "stato": "confermato"
+  },
+  "florio-marsala-tonno-2026__nino-castiglione": {
+   "accompagnatori": 0,
+   "contactId": "nino-castiglione",
+   "dataInvito": "",
+   "dataRisposta": "",
+   "dataSollecito": "",
+   "eventId": "florio-marsala-tonno-2026",
+   "note": "Disponibilità dell'azienda; rappresentante da definire.",
+   "presente": false,
+   "ruoloEvento": "Relatore",
+   "stato": "confermato"
+  },
+  "florio-marsala-tonno-2026__requirez-salvatore": {
+   "accompagnatori": 0,
+   "contactId": "requirez-salvatore",
+   "dataInvito": "",
+   "dataRisposta": "",
+   "dataSollecito": "",
+   "eventId": "florio-marsala-tonno-2026",
+   "note": "Disponibilità indicata nel programma; verificare l'invio della lettera di conferma.",
+   "presente": false,
+   "ruoloEvento": "Relatore",
+   "stato": "confermato"
+  },
+  "florio-marsala-tonno-2026__taormina-irene": {
+   "accompagnatori": 0,
+   "contactId": "taormina-irene",
+   "dataInvito": "",
+   "dataRisposta": "",
+   "dataSollecito": "",
+   "eventId": "florio-marsala-tonno-2026",
+   "note": "",
+   "presente": false,
+   "ruoloEvento": "Ospite",
+   "stato": "da_invitare"
+  }
+ }
+};
 
-/* ---------- archivio locale: usato quando la pagina è aperta fuori da Claude ---------- */
-
-/* Genera una copia del file con i dati attuali scritti nel codice come dati fissi */
-function buildUpdatedFile(){
-  const M1="/*SEED-"+"START*/",M2="/*SEED-"+"END*/";
-  const s=SOURCE_HTML.indexOf(M1),e=SOURCE_HTML.indexOf(M2);
-  if(s<0||e<0)throw new Error("marcatori mancanti");
-  const n=new Date(),p=x=>String(x).padStart(2,"0");
-  const stamp=n.getFullYear()+"."+p(n.getMonth()+1)+"."+p(n.getDate())+"-"+p(n.getHours())+p(n.getMinutes());
-  const json=JSON.stringify(S.db.exportData(),null,1).replace(/</g,"\\u003c");
-  let html=SOURCE_HTML.slice(0,s)+M1+"const SEED="+json+";"+SOURCE_HTML.slice(e);
-  return{html,stamp};
-}
-/* Archivio in memoria: fuori da Claude la pagina parte sempre dai dati scritti nel codice (SEED)
-   e non salva nulla nel browser. Le modifiche diventano permanenti solo scaricando il file aggiornato. */
-function makeMemoryDB(seed){
+/* ---------- archivio nel browser ----------
+   Al primo avvio la rubrica parte dai dati iniziali (SEED); da quel momento ogni modifica
+   viene salvata nel localStorage di questo browser e ritrovata alle aperture successive. */
+const STORAGE_KEY="sf-rubrica-dati-v2";
+function makeStoredDB(seed){
   const clone=o=>JSON.parse(JSON.stringify(o));
-  let data=clone(seed);
+  let data=null;
+  try{const raw=localStorage.getItem(STORAGE_KEY);if(raw)data=JSON.parse(raw)}catch(_){data=null}
+  if(!data||typeof data!=="object"||!data.contacts)data=clone(seed);
+  let warned=false;
+  const persist=()=>{try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}catch(_){if(!warned){warned=true;toast("Questo browser non consente il salvataggio: le modifiche andranno perse alla chiusura.")}}};
+  persist();
   const listeners=[];
-  const changed=()=>{S.dirty=true;updateDirty();listeners.slice().forEach(l=>l())};
+  const changed=()=>{persist();listeners.slice().forEach(l=>l())};
   const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,10);
   const snap=(id,b)=>({id,exists:!!b,data:()=>b?clone(b):undefined});
   const listen=(emit)=>{listeners.push(emit);setTimeout(emit,0);return()=>{const i=listeners.indexOf(emit);if(i>=0)listeners.splice(i,1)}};
@@ -675,16 +965,15 @@ function makeMemoryDB(seed){
   function colRef(col){return{
     doc:id=>docRef(col,id||uid()),
     onSnapshot(fn){return listen(()=>{const docs=Object.entries(data[col]||{}).map(([id,b])=>snap(id,b));fn({docs,size:docs.length,empty:!docs.length})})}}}
-  return{local:true,collection:colRef,doc:p=>{const [c,i]=p.split("/");return docRef(c,i)},
-    exportData:()=>clone(data),importData:d=>{data=clone(d);changed()}};
+  /* aggiorna la vista se la rubrica è aperta in un'altra scheda dello stesso browser */
+  window.addEventListener("storage",e=>{if(e.key===STORAGE_KEY&&e.newValue){try{const d=JSON.parse(e.newValue);if(d&&d.contacts){data=d;listeners.slice().forEach(l=>l())}}catch(_){}}});
+  return{collection:colRef,doc:p=>{const [c,i]=p.split("/");return docRef(c,i)}};
 }
-function updateDirty(){}
-window.addEventListener("beforeunload",e=>{if(S.dirty){e.preventDefault();e.returnValue=""}});
 
 (async function boot(){
   const h=(location.hash||"").slice(1);if(["report","inviti","contatti","eventi"].includes(h))S.tab=h;
   render();
-  const db=makeMemoryDB(SEED);S.dirty=false;
+  const db=makeStoredDB(SEED);
   S.db=db;
   sub("contacts","contacts");sub("events","events");sub("invites","invites");sub("reports","reports");
   db.doc("settings/main").onSnapshot(d=>{S.settings={...DEF_SETTINGS,...(d.exists?d.data():{})};requestRender()},()=>{});
