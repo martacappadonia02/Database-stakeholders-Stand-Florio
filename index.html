@@ -147,6 +147,17 @@ ul.plain li:last-child{border-bottom:0}
 .checks{display:grid;gap:6px}
 .checks label{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px}
 .sheet-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;margin-top:20px}
+/* selezione multipla contatti */
+.selcell{display:flex;gap:10px;align-items:flex-start}
+.selcell input[type=checkbox],th .selcell input[type=checkbox]{width:17px;height:17px;margin:1px 0 0;flex:none;cursor:pointer;accent-color:var(--marsala)}
+tr.is-sel td{background:var(--marsala-soft)}
+@media (min-width:700px){.tbl-wrap.scroll tr.is-sel td:first-child{background:var(--marsala-soft)}}
+.bulkbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 12px;margin-bottom:12px;border:1px solid var(--marsala);border-radius:var(--r);background:var(--marsala-soft)}
+.bulkbar .count{font-weight:700;color:var(--marsala);margin-right:4px}
+.bulkbar .grp{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bulkbar select{padding:5px 8px}
+.bulkbar .sep{width:1px;align-self:stretch;background:var(--line)}
+@media (max-width:640px){.bulkbar .sep{display:none}}
 .addlist{max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:var(--r);margin:10px 0}
 .addlist label{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer}
 .addlist label:last-child{border-bottom:0}
@@ -207,7 +218,7 @@ const PROVENIENZE=["Contatto diretto","Contatto aziendale (trovato su internet)"
 const DEF_SETTINGS={tasso:35,soglia:7,targetMin:120,targetMax:150};
 
 const S={db:null,canWrite:true,contacts:[],events:[],invites:[],reports:[],settings:{...DEF_SETTINGS},
-  loaded:{contacts:false,events:false,invites:false},eventId:null,tab:"report",q:"",cat:"",stato:"",pendingRender:false};
+  loaded:{contacts:false,events:false,invites:false},sel:new Set(),eventId:null,tab:"report",q:"",cat:"",stato:"",pendingRender:false};
 const catLabel=k=>(CATS.find(c=>c.k===k)||{l:"—"}).l;
 const statoLabel=k=>(STATI.find(s=>s.k===k)||{l:k}).l;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -259,6 +270,7 @@ function render(){
   if(!S.loaded.contacts||!S.loaded.events||!S.loaded.invites){v.innerHTML=`<div class="empty"><strong>Caricamento della rubrica…</strong>I contatti e lo stato degli inviti compariranno qui.</div>`;return}
   const old=v.querySelector(".tbl-wrap.scroll"),pos=old?{id:old.id,l:old.scrollLeft,t:old.scrollTop}:null;
   v.innerHTML=({report:viewReport,inviti:viewInviti,contatti:viewContatti,eventi:viewEventi}[S.tab]||viewReport)();
+  const sa=v.querySelector("#sel-all");if(sa&&sa.dataset.indet)sa.indeterminate=true;
   const nw=v.querySelector(".tbl-wrap.scroll");if(pos&&nw&&nw.id===pos.id){nw.scrollLeft=pos.l;nw.scrollTop=pos.t}
 }
 
@@ -369,6 +381,9 @@ function viewContatti(){
   const q=S.q.toLowerCase();
   const rows=S.contacts.filter(c=>!S.cat||c.categoria===S.cat).filter(c=>!q||[fullName(c),c.organizzazione,c.ruolo,c.email,c.telefono,c.provenienza,c.note].join(" ").toLowerCase().includes(q))
     .sort((a,b)=>(a.cognome||a.nome||a.organizzazione||"").localeCompare(b.cognome||b.nome||b.organizzazione||""));
+  const ids=new Set(S.contacts.map(c=>c.id));[...S.sel].forEach(id=>{if(!ids.has(id))S.sel.delete(id)});
+  const visSel=rows.filter(c=>S.sel.has(c.id)).length;
+  const allOn=rows.length>0&&visSel===rows.length,someOn=visSel>0&&!allOn;
   return`
   <div class="toolbar">
     <div class="grow"><input type="search" id="q-con" placeholder="Cerca per nome, ente, email, note" value="${esc(S.q)}" aria-label="Cerca nei contatti"></div>
@@ -378,9 +393,10 @@ function viewContatti(){
     <label class="btn w" for="csv-in">Importa CSV</label><input type="file" id="csv-in" accept=".csv,text/csv" hidden>
     <button class="btn" data-act="csv-contatti">Scarica CSV</button>
   </div>
-  ${S.contacts.length?`<div class="tbl-wrap scroll" id="scroll-contatti"><table><thead><tr><th>Nome</th><th>Organizzazione · ruolo</th><th>Email · telefono</th><th>Categoria</th><th>Provenienza</th><th>Eventi a cui ha partecipato</th><th>Note</th><th class="w"></th></tr></thead><tbody>
-  ${rows.map(c=>`<tr>
-    <td><strong>${esc(fullName(c))}</strong></td>
+  ${bulkBar()}
+  ${S.contacts.length?`<div class="tbl-wrap scroll" id="scroll-contatti"><table><thead><tr><th><span class="selcell"><input type="checkbox" id="sel-all" aria-label="Seleziona tutti i contatti visibili"${allOn?" checked":""}${someOn?' data-indet="1"':""}>Nome</span></th><th>Organizzazione · ruolo</th><th>Email · telefono</th><th>Categoria</th><th>Provenienza</th><th>Eventi a cui ha partecipato</th><th>Note</th><th class="w"></th></tr></thead><tbody>
+  ${rows.map(c=>`<tr${S.sel.has(c.id)?' class="is-sel"':""}>
+    <td><label class="selcell"><input type="checkbox" name="sel-c" value="${esc(c.id)}" aria-label="Seleziona ${esc(fullName(c))}"${S.sel.has(c.id)?" checked":""}><strong>${esc(fullName(c))}</strong></label></td>
     <td>${esc(c.organizzazione||"—")}<span class="sub">${esc(c.ruolo||"")}</span></td>
     <td><span class="copyable">${esc(c.email||"—")}</span><span class="sub num">${esc(c.telefono||"")}</span></td>
     <td><span class="cat">${esc(catLabel(c.categoria))}</span></td>
@@ -392,6 +408,47 @@ function viewContatti(){
   </tbody></table></div>
   <p class="hint" style="margin-top:10px">Importazione CSV: prima riga con le intestazioni nome, cognome, organizzazione, ruolo, email, telefono, categoria, provenienza, note (separatore punto e virgola o virgola). I contatti con un'email già presente vengono saltati.</p>`
   :`<div class="tbl-wrap"><div class="empty"><strong>La rubrica è vuota</strong>Aggiungi il primo contatto con «Nuovo contatto» o importa un elenco CSV.</div></div>`}`;
+}
+
+function bulkBar(){
+  const n=S.sel.size; if(!n||!S.canWrite)return"";
+  const evs=[...S.events].sort((a,b)=>(a.data||"").localeCompare(b.data||""));
+  const cur=S.eventId;
+  return`<div class="bulkbar" role="region" aria-label="Azioni sui contatti selezionati">
+    <span class="count">${n} ${n===1?"contatto selezionato":"contatti selezionati"}</span>
+    ${evs.length?`<span class="grp">
+      <label for="bulk-ev" class="hint">Evento</label><select id="bulk-ev">${evs.map(e=>`<option value="${esc(e.id)}"${e.id===cur?" selected":""}>${esc(e.nome)} · ${fmt(e.data)}</option>`).join("")}</select>
+      <select id="bulk-stato" aria-label="Stato iniziale"><option value="invitato">Invitato oggi</option><option value="da_invitare">Da invitare</option></select>
+      <button class="btn small primary" data-act="bulk-invite">Aggiungi agli invitati</button>
+    </span><span class="sep"></span>`:""}
+    <span class="grp">
+      <button class="btn small danger" data-act="bulk-delete">Elimina selezionati</button>
+      <button class="btn small" data-act="bulk-clear">Deseleziona</button>
+    </span>
+  </div>`;
+}
+async function bulkInvite(){
+  const evId=($("#bulk-ev")||{}).value,st=($("#bulk-stato")||{}).value||"invitato";
+  if(!evId||!eventById(evId)){toast("Scegli l'evento.");return}
+  const already=new Set(invitesFor(evId).map(i=>i.contactId));
+  const ids=[...S.sel].filter(id=>contactById(id));
+  const todo=ids.filter(id=>!already.has(id));
+  let n=0;
+  for(const id of todo){const ok=await w(()=>S.db.collection("invites").doc(invId(evId,id)).set({eventId:evId,contactId:id,stato:st,ruoloEvento:"Ospite",dataInvito:st==="invitato"?todayStr():"",dataSollecito:"",dataRisposta:"",accompagnatori:0,presente:false,note:""}));if(ok)n++;else break}
+  const skip=ids.length-todo.length;
+  S.sel.clear();render();
+  toast(`${n} ${n===1?"contatto aggiunto":"contatti aggiunti"} a «${eventById(evId).nome}»${skip?` · ${skip} già presenti, lasciati invariati`:""}`);
+}
+async function bulkDelete(btn){
+  const ids=[...S.sel].filter(id=>contactById(id)); if(!ids.length)return;
+  if(rmArmed!=="bulk"){rmArmed="bulk";btn.textContent=`Conferma: elimina ${ids.length}`;return}
+  rmArmed=null;let n=0;
+  for(const id of ids){
+    let ok=true;for(const i of S.invites.filter(i=>i.contactId===id)){if(!await w(()=>S.db.collection("invites").doc(i.id).delete())){ok=false;break}}
+    if(!ok||!await w(()=>S.db.collection("contacts").doc(id).delete()))break;n++;
+  }
+  S.sel.clear();render();
+  toast(`${n} ${n===1?"contatto eliminato":"contatti eliminati"}, insieme ai rispettivi inviti`);
 }
 
 function viewEventi(){
@@ -561,6 +618,9 @@ document.addEventListener("click",async e=>{
   else if(a==="del-contact"){if(rmArmed!==id){rmArmed=id;t.textContent="Conferma eliminazione";return}
     const invs=S.invites.filter(i=>i.contactId===id);for(const i of invs)await w(()=>S.db.collection("invites").doc(i.id).delete());
     if(await w(()=>S.db.collection("contacts").doc(id).delete())){closeSheet();toast("Contatto eliminato")}rmArmed=null}
+  else if(a==="bulk-invite")bulkInvite();
+  else if(a==="bulk-delete")bulkDelete(t);
+  else if(a==="bulk-clear"){S.sel.clear();rmArmed=null;render()}
   else if(a==="open-add")addSheet();
   else if(a==="add-all"){document.querySelectorAll("#add-list label:not([hidden]) input").forEach(x=>x.checked=true);countAdd()}
   else if(a==="add-confirm")addConfirm();
@@ -577,6 +637,8 @@ document.addEventListener("change",async e=>{
   const el=e.target;
   if(el.id==="evsel"){S.eventId=el.value;render();return}
   if(el.id==="f-cat"){S.cat=el.value;render();return}
+  if(el.name==="sel-c"){el.checked?S.sel.add(el.value):S.sel.delete(el.value);rmArmed=null;render();return}
+  if(el.id==="sel-all"){const vis=[...document.querySelectorAll('#view input[name="sel-c"]')].map(x=>x.value);el.checked?vis.forEach(id=>S.sel.add(id)):vis.forEach(id=>S.sel.delete(id));rmArmed=null;render();return}
   if(el.id==="csv-in"&&el.files[0]){importCSV(el.files[0]);el.value="";return}
   if(el.id==="add-cat"){filterAdd();return}
   if(el.name==="add-c"){countAdd();return}
