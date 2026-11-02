@@ -147,6 +147,9 @@ ul.plain li:last-child{border-bottom:0}
 .checks{display:grid;gap:6px}
 .checks label{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px}
 .sheet-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;margin-top:20px}
+/* nome cliccabile che apre l'anagrafica */
+.namelink{background:none;border:0;padding:0;font:inherit;font-weight:700;color:var(--marsala);text-align:left;cursor:pointer;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px;transition:text-decoration-color .15s}
+.namelink:hover,.namelink:focus-visible{text-decoration-color:currentColor}
 /* selezione multipla contatti */
 .selcell{display:flex;gap:10px;align-items:flex-start}
 .selcell input[type=checkbox],th .selcell input[type=checkbox]{width:17px;height:17px;margin:1px 0 0;flex:none;cursor:pointer;accent-color:var(--marsala)}
@@ -361,7 +364,7 @@ function viewInviti(){
   ${all.length?`<div class="tbl-wrap scroll" id="scroll-inviti"><table><thead><tr><th>Contatto</th><th>Ruolo nell'evento</th><th>Stato</th><th>Invito</th><th>Sollecito</th><th>Risposta</th><th>Accomp.</th><th>Presente</th><th>Note</th><th class="w"></th></tr></thead><tbody>
   ${rows.map(i=>{const c=contactById(i.contactId);const ref=i.stato==="sollecitato"?i.dataSollecito:i.dataInvito;const d=days(ref,today);const due=(i.stato==="invitato"||i.stato==="sollecitato")&&(ref==null||d>=soglia);
    return`<tr data-inv="${esc(i.id)}">
-    <td><strong>${esc(fullName(c))}</strong><span class="sub">${esc([c.organizzazione,c.ruolo].filter(Boolean).join(" · "))}</span><span class="cat">${esc(catLabel(c.categoria))}</span>${due?`<span class="flag">Da sollecitare${d!=null?" · "+d+" gg":""}</span>`:""}</td>
+    <td><button type="button" class="namelink" data-act="edit-contact" data-id="${esc(c.id)}" title="Apri l'anagrafica">${esc(fullName(c))}</button><span class="sub">${esc([c.organizzazione,c.ruolo].filter(Boolean).join(" · "))}</span><span class="cat">${esc(catLabel(c.categoria))}</span>${due?`<span class="flag">Da sollecitare${d!=null?" · "+d+" gg":""}</span>`:""}</td>
     <td><select data-f="ruoloEvento" aria-label="Ruolo nell'evento" ${S.canWrite?"":"disabled"}>${RUOLI.map(r=>`<option${r===(i.ruoloEvento||"Ospite")?" selected":""}>${r}</option>`).join("")}</select></td>
     <td><select class="stsel st-${esc(i.stato)}" data-f="stato" aria-label="Stato invito" ${S.canWrite?"":"disabled"}>${STATI.map(s=>`<option value="${s.k}"${s.k===i.stato?" selected":""}>${s.l}</option>`).join("")}</select></td>
     <td><input type="date" data-f="dataInvito" value="${esc(i.dataInvito||"")}" aria-label="Data invito" ${S.canWrite?"":"disabled"}></td>
