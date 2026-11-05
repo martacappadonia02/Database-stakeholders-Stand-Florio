@@ -150,6 +150,22 @@ ul.plain li:last-child{border-bottom:0}
 /* nome cliccabile che apre l'anagrafica */
 .namelink{background:none;border:0;padding:0;font:inherit;font-weight:700;color:var(--marsala);text-align:left;cursor:pointer;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px;transition:text-decoration-color .15s}
 .namelink:hover,.namelink:focus-visible{text-decoration-color:currentColor}
+/* codice identificativo e controlli */
+.code{display:inline-block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--tonno);background:var(--tonno-soft);border-radius:4px;padding:1px 6px;margin-right:8px;vertical-align:1px}
+h2 .code{font-size:14px;vertical-align:3px}
+.chk-ok{background:var(--ok-soft);color:var(--ok)}
+.chk-warn{background:var(--warn-soft);color:var(--warn)}
+.chk-bad{background:var(--bad-soft);color:var(--bad)}
+.flag.bad{color:var(--bad)}
+.clamp{display:-webkit-box;-webkit-line-clamp:3;line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.checks-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-6px 0 16px}
+.checks-row .hint{margin-right:4px}
+.fsec{border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;background:var(--surface)}
+.fsec>summary{cursor:pointer;padding:10px 12px;font-family:var(--f-display);font-weight:500;text-transform:uppercase;letter-spacing:.06em;font-size:13px;color:var(--marsala);list-style-position:inside}
+.fsec>.form{padding:4px 12px 14px}
+.form input[readonly]{background:var(--sunk);color:var(--muted)}
+.ro-h{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--marsala);margin:20px 0 6px}
+.ro-grid dd a{color:var(--tonno);overflow-wrap:anywhere}
 /* scheda anagrafica in sola lettura */
 .ro-sub{color:var(--muted);margin:-10px 0 18px}
 .ro-grid{display:grid;grid-template-columns:150px minmax(0,1fr);gap:0;margin:0;border-top:1px solid var(--line)}
@@ -210,14 +226,100 @@ tr.is-sel td{background:var(--marsala-soft)}
 <div id="toast-root"></div>
 
 <script>
-const CATS=[
- {k:"giornalisti",l:"Giornalisti e testate"},
- {k:"istituzioni",l:"Istituzioni e PA"},
- {k:"associazioni",l:"Associazioni di categoria"},
- {k:"imprese",l:"Imprese del territorio"},
- {k:"operatori",l:"Operatori turistici, culturali, enogastronomici"},
- {k:"altri",l:"Professionisti, università, fondazioni"}
+/* ---------- struttura dell'anagrafica (rubrica del cerimoniale, 20 ottobre 2026) ---------- */
+const CATALOGO=[{"k": "Stampa", "sub": ["Televisioni", "Radio", "Quotidiani", "Testate online", "Periodici e riviste", "Agenzie di stampa", "Giornalisti freelance", "Fotogiornalisti e videoreporter"]}, {"k": "Autorità amministrative", "sub": ["Comune – Sindaco e Gabinetto", "Comune – Assessorati", "Comune – Consiglio comunale", "Città metropolitana", "Provincia / Libero consorzio", "Circoscrizioni", "Regione – Presidenza e Assessorati", "Assemblea regionale", "Parlamento e Governo", "Enti pubblici e agenzie"]}, {"k": "Autorità civili e sicurezza", "sub": ["Prefettura", "Questura e Polizia di Stato", "Carabinieri", "Guardia di Finanza", "Capitaneria di porto", "Vigili del Fuoco", "Polizia municipale", "Autorità giudiziarie"]}, {"k": "Autorità religiose", "sub": ["Arcidiocesi e Diocesi", "Parrocchie del territorio", "Comunità religiose"]}, {"k": "Associazioni e territorio", "sub": ["Associazioni culturali", "Associazioni di quartiere", "Comitati civici e residenti", "ETS e volontariato sociale", "Associazioni ambientali", "Associazioni sportive", "Pro loco", "Service club"]}, {"k": "Rappresentanze economiche", "sub": ["Associazioni del commercio", "Associazioni industria e artigianato", "Associazioni agricole e pesca", "Consorzi e associazioni del vino", "Camera di commercio", "Ordini professionali", "Sindacati", "Cooperazione", "Ospitalità e ristorazione"]}, {"k": "Cultura e patrimonio", "sub": ["Fondazioni culturali", "Musei e archivi", "Soprintendenze e tutela", "Biblioteche", "Autori e scrittori", "Storici e studiosi del territorio", "Festival e operatori culturali"]}, {"k": "Università e formazione", "sub": ["Rettorato e governance", "Docenti e ricercatori", "Dipartimenti e centri di ricerca", "Istituti alberghieri", "Scuole del territorio", "Formazione professionale"]}, {"k": "Imprese e filiere", "sub": ["Cantine e produttori di vino", "Pesca, tonno e conserve", "Ristorazione e chef", "Produttori agroalimentari", "Commercio e artigianato", "Servizi e professionisti", "Banche e imprese finanziarie", "Distribuzione alimentare", "Architettura e progettazione"]}, {"k": "Turismo e ospitalità", "sub": ["Hotel e strutture ricettive", "Tour operator e agenzie", "Guide turistiche", "Reti e distretti turistici", "Operatori del turismo culturale", "Operatori del turismo enogastronomico"]}, {"k": "Comunicazione digitale", "sub": ["Creator enogastronomia", "Creator cultura e turismo", "Pagine di quartiere", "Blogger e podcaster", "Agenzie di comunicazione", "Grafica e progettazione visiva"]}];
+const CATS=CATALOGO.map(c=>({k:c.k,l:c.k}));
+const SUBCATS=Object.fromEntries(CATALOGO.map(c=>[c.k,c.sub]));
+const TEMI=["Da definire", "Enogastronomia", "Vino e Marsala", "Tonno e cultura del mare", "Storia dei Florio", "Cultura e patrimonio", "Turismo", "Cronaca locale", "Rigenerazione urbana e costa", "Sociale e comunità", "Economia e imprese", "Istituzioni e politiche pubbliche"];
+const TERRITORI=["Da definire", "Costa Sud / Romagnolo", "Brancaccio / Maredolce", "Settecannoli", "Sant’Erasmo", "Palermo città", "Area metropolitana Palermo", "Marsala", "Trapani e provincia", "Sicilia", "Italia", "Internazionale"];
+const GRUPPI=[{k:"Base utente",p:"U"},{k:"Nuovo suggerimento",p:"S"}];
+const LISTE={
+  gruppo:GRUPPI.map(g=>g.k),
+  priorita:["Alta","Media","Bassa","Da definire"],
+  statoRecapiti:["Da reperire","Fornito; da verificare","Pubblicato; da riconfermare","Verificato","Non valido"],
+  baseGiuridica:["Da valutare","Consenso","Legittimo interesse documentato","Altra base documentata"],
+  consenso:["Non documentato","Acquisito","Negato","Revocato","Non applicabile"],
+  informativa:["Da gestire","Fornita","Non applicabile documentato"],
+  opposizione:["Da verificare","No","Sì"],
+  approvazione:["Da valutare","Approvato","Non approvato"],
+  verificaIdentita:["Da verificare","Da riconfermare","Verificata"],
+  statoIndirizzo:["Da reperire","Pubblicato; da riconfermare","Confermato dalla segreteria","Non applicabile"],
+  tema:TEMI,
+  territorioSeguito:TERRITORI
+};
+/* Sezioni e campi della scheda: t = tipo di campo, full = a tutta larghezza */
+const SEZIONI=[
+ {id:"ident",l:"Identificazione",open:true,f:[
+   {k:"codice",l:"ID",t:"code"},{k:"gruppo",l:"Gruppo",t:"select"},
+   {k:"priorita",l:"Priorità proposta",t:"select"},{k:"referenteInterno",l:"Referente interno"},
+   {k:"provenienza",l:"Provenienza del contatto",t:"prov",full:true}]},
+ {id:"anag",l:"Anagrafica",open:true,f:[
+   {k:"nome",l:"Nome"},{k:"cognome",l:"Cognome"},
+   {k:"organizzazione",l:"Organizzazione",full:true},{k:"ruolo",l:"Ruolo",full:true},
+   {k:"formulaSaluto",l:"Formula di saluto",full:true},
+   {k:"fonteNominativo",l:"Fonte nominativo originale"},{k:"verificaIdentita",l:"Verifica identità",t:"select"}]},
+ {id:"class",l:"Classificazione",open:true,f:[
+   {k:"categoria",l:"Categoria",t:"cat"},{k:"sottocategoria",l:"Sottocategoria",t:"subcat"},
+   {k:"tema",l:"Tema principale",t:"select"},{k:"territorioSeguito",l:"Territorio seguito",t:"select"},
+   {k:"territorio",l:"Territorio",full:true}]},
+ {id:"recap",l:"Recapiti",open:true,f:[
+   {k:"email",l:"Email principale",t:"email"},{k:"emailAlt",l:"Email alternativa",t:"email"},
+   {k:"telefono",l:"Telefono",t:"tel"},{k:"statoRecapiti",l:"Stato recapiti",t:"select"},
+   {k:"fonteUrl",l:"Fonte / URL",full:true},{k:"dataAcquisizione",l:"Data acquisizione",t:"date"}]},
+ {id:"sede",l:"Sede e segreteria",f:[
+   {k:"indirizzo",l:"Indirizzo professionale",full:true},{k:"cap",l:"CAP"},{k:"comune",l:"Comune sede"},
+   {k:"provincia",l:"Provincia sede"},{k:"pec",l:"PEC ente",t:"email"},
+   {k:"sito",l:"Sito ufficiale",full:true},{k:"referenteSegreteria",l:"Referente segreteria"},
+   {k:"emailSegreteria",l:"Email segreteria / ufficio",t:"email"},{k:"telSegreteria",l:"Telefono segreteria / ufficio",t:"tel"},
+   {k:"statoIndirizzo",l:"Stato indirizzo",t:"select"},{k:"fonteIndirizzo",l:"Fonte indirizzo / segreteria",full:true},
+   {k:"dataConsultazione",l:"Data consultazione fonte",t:"date"}]},
+ {id:"invito",l:"Invito e cerimoniale",f:[
+   {k:"motivoInvito",l:"Motivo invito",full:true},{k:"prossimaAzione",l:"Prossima azione",full:true},
+   {k:"scadenzaAzione",l:"Scadenza azione",t:"date"},{k:"noteCerimoniale",l:"Note cerimoniale",t:"area",full:true}]},
+ {id:"privacy",l:"Privacy e trattamento dei dati",f:[
+   {k:"finalita",l:"Finalità",full:true},{k:"baseGiuridica",l:"Base giuridica",t:"select"},
+   {k:"approvazione",l:"Approvazione interna",t:"select"},
+   {k:"evidenzaBase",l:"Evidenza / motivazione base",t:"area",full:true},
+   {k:"consenso",l:"Consenso",t:"select"},{k:"dataConsenso",l:"Data consenso / revoca",t:"date"},
+   {k:"informativa",l:"Informativa",t:"select"},{k:"dataInformativa",l:"Data informativa",t:"date"},
+   {k:"opposizione",l:"Opposizione",t:"select"},{k:"revisioneConservazione",l:"Revisione conservazione",t:"date"}]},
+ {id:"note",l:"Verifiche e note",open:true,f:[{k:"note",l:"Verifiche e note",t:"area",full:true}]}
 ];
+const CAMPI=SEZIONI.flatMap(s=>s.f);
+const DEFAULTS={gruppo:"Base utente",priorita:"Da definire",statoRecapiti:"Da reperire",baseGiuridica:"Da valutare",consenso:"Non documentato",
+  informativa:"Da gestire",opposizione:"Da verificare",approvazione:"Da valutare",verificaIdentita:"Da verificare",statoIndirizzo:"Da reperire",
+  tema:"Da definire",territorioSeguito:"Da definire",finalita:"Invito evento 06/11/2026",provenienza:"Contatto diretto"};
+const PROVENIENZE=["Contatto diretto","Contatto aziendale (trovato su internet)","Rubrica cerimoniale (20 ottobre 2026)","Rubrica Stand Florio","Rubrica Servizitalia","Evento precedente","Segnalazione","Ricerca stampa","Relazione progettuale","Importazione CSV"];
+
+/* Codice identificativo: lettera del gruppo (U = Base utente, S = Nuovo suggerimento) + progressivo a tre cifre.
+   Il progressivo non viene mai riutilizzato, nemmeno dopo l'eliminazione di un contatto. */
+function prefixOf(gruppo){return (GRUPPI.find(g=>g.k===gruppo)||GRUPPI[0]).p}
+function nextCode(gruppo){
+  const p=prefixOf(gruppo),mx=(S.settings.maxCodes||{})[p]||0;
+  const used=S.contacts.map(c=>String(c.codice||"")).filter(x=>x[0]===p).map(x=>parseInt(x.slice(1))||0);
+  const n=Math.max(mx,0,...used)+1;
+  return{code:p+String(n).padStart(3,"0"),p,n};
+}
+
+/* Controlli calcolati, come nel file Excel */
+const normEmail=e=>String(e||"").trim().toLowerCase();
+const nameKey=c=>[c.nome,c.cognome,c.organizzazione].map(x=>String(x||"").trim()).join(" ").trim().toLowerCase();
+function checkDuplicati(c){
+  if(c.codice&&S.contacts.filter(x=>x.codice===c.codice).length>1)return"ID duplicato";
+  const e=normEmail(c.email);if(e&&S.contacts.filter(x=>normEmail(x.email)===e).length>1)return"Email condivisa/duplicata";
+  const k=nameKey(c);if(k&&S.contacts.filter(x=>nameKey(x)===k).length>1)return"Possibile omonimo";
+  return"OK";
+}
+function checkPronto(c){
+  if(c.opposizione==="Sì"||c.consenso==="Revocato"||c.consenso==="Negato")return"NON CONTATTARE";
+  const ok=c.statoRecapiti==="Verificato"&&c.verificaIdentita==="Verificata"&&c.opposizione==="No"&&c.approvazione==="Approvato"&&
+    c.baseGiuridica&&c.baseGiuridica!=="Da valutare"&&c.evidenzaBase&&(c.informativa==="Fornita"||c.informativa==="Non applicabile documentato")&&
+    (c.email||c.telefono)&&(c.baseGiuridica!=="Consenso"||(c.consenso==="Acquisito"&&c.dataConsenso));
+  return ok?"Verifiche completate":"Verifiche mancanti";
+}
+function checkCoerenza(c){return (SUBCATS[c.categoria]||[]).includes(c.sottocategoria)?"OK":"Rivedere sottocategoria"}
+function chkPill(v){const cls=["OK","Verifiche completate","Nessun duplicato","Categoria coerente"].includes(v)?"chk-ok":v==="NON CONTATTARE"||v==="ID duplicato"?"chk-bad":"chk-warn";return`<span class="pill ${cls}">${esc(v)}</span>`}
+
 const STATI=[
  {k:"da_invitare",l:"Da invitare"},
  {k:"invitato",l:"Invitato · in attesa"},
@@ -226,12 +328,11 @@ const STATI=[
  {k:"rifiutato",l:"Rifiutato"}
 ];
 const RUOLI=["Ospite","Relatore","Moderatore","Azienda partner","Stampa","Istituzione"];
-const PROVENIENZE=["Contatto diretto","Contatto aziendale (trovato su internet)","Rubrica Stand Florio","Rubrica Servizitalia","Evento precedente","Segnalazione","Ricerca stampa","Relazione progettuale","Importazione CSV"];
 const DEF_SETTINGS={tasso:35,soglia:7,targetMin:120,targetMax:150};
 
 const S={db:null,canWrite:true,contacts:[],events:[],invites:[],reports:[],settings:{...DEF_SETTINGS},
-  loaded:{contacts:false,events:false,invites:false},sel:new Set(),eventId:null,tab:"report",q:"",cat:"",stato:"",pendingRender:false};
-const catLabel=k=>(CATS.find(c=>c.k===k)||{l:"—"}).l;
+  loaded:{contacts:false,events:false,invites:false},sel:new Set(),eventId:null,tab:"report",q:"",cat:"",grp:"",pri:"",sort:"nome",stato:"",pendingRender:false};
+const catLabel=k=>(CATS.find(c=>c.k===k)||{l:k||"—"}).l;
 const statoLabel=k=>(STATI.find(s=>s.k===k)||{l:k}).l;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const $=s=>document.querySelector(s);
@@ -356,7 +457,7 @@ function viewInviti(){
   const all=invitesFor(ev.id).filter(i=>contactById(i.contactId));
   const counts=Object.fromEntries(STATI.map(s=>[s.k,all.filter(i=>i.stato===s.k).length]));
   const q=S.q.toLowerCase();
-  let rows=all.filter(i=>!S.stato||i.stato===S.stato).filter(i=>{const c=contactById(i.contactId);return !q||[fullName(c),c.organizzazione,c.ruolo,c.email].join(" ").toLowerCase().includes(q)});
+  let rows=all.filter(i=>!S.stato||i.stato===S.stato).filter(i=>{const c=contactById(i.contactId);return !q||[c.codice,fullName(c),c.organizzazione,c.ruolo,c.email].join(" ").toLowerCase().includes(q)});
   const order=["sollecitato","invitato","da_invitare","confermato","rifiutato"];
   rows.sort((a,b)=>order.indexOf(a.stato)-order.indexOf(b.stato)||fullName(contactById(a.contactId)).localeCompare(fullName(contactById(b.contactId))));
   const today=todayStr(),soglia=+S.settings.soglia||7;
@@ -373,7 +474,7 @@ function viewInviti(){
   ${all.length?`<div class="tbl-wrap scroll" id="scroll-inviti"><table><thead><tr><th>Contatto</th><th>Ruolo nell'evento</th><th>Stato</th><th>Invito</th><th>Sollecito</th><th>Risposta</th><th>Accomp.</th><th>Presente</th><th>Note</th><th class="w"></th></tr></thead><tbody>
   ${rows.map(i=>{const c=contactById(i.contactId);const ref=i.stato==="sollecitato"?i.dataSollecito:i.dataInvito;const d=days(ref,today);const due=(i.stato==="invitato"||i.stato==="sollecitato")&&(ref==null||d>=soglia);
    return`<tr data-inv="${esc(i.id)}">
-    <td><button type="button" class="namelink" data-act="view-contact" data-id="${esc(c.id)}" title="Apri l'anagrafica">${esc(fullName(c))}</button><span class="sub">${esc([c.organizzazione,c.ruolo].filter(Boolean).join(" · "))}</span><span class="cat">${esc(catLabel(c.categoria))}</span>${due?`<span class="flag">Da sollecitare${d!=null?" · "+d+" gg":""}</span>`:""}</td>
+    <td><span class="code">${esc(c.codice||"")}</span><button type="button" class="namelink" data-act="view-contact" data-id="${esc(c.id)}" title="Apri l'anagrafica">${esc(fullName(c))}</button><span class="sub">${esc([c.organizzazione,c.ruolo].filter(Boolean).join(" · "))}</span><span class="cat">${esc(catLabel(c.categoria))}</span>${checkPronto(c)==="NON CONTATTARE"?`<span class="flag bad">Non contattare</span>`:""}${due?`<span class="flag">Da sollecitare${d!=null?" · "+d+" gg":""}</span>`:""}</td>
     <td><select data-f="ruoloEvento" aria-label="Ruolo nell'evento" ${S.canWrite?"":"disabled"}>${RUOLI.map(r=>`<option${r===(i.ruoloEvento||"Ospite")?" selected":""}>${r}</option>`).join("")}</select></td>
     <td><select class="stsel st-${esc(i.stato)}" data-f="stato" aria-label="Stato invito" ${S.canWrite?"":"disabled"}>${STATI.map(s=>`<option value="${s.k}"${s.k===i.stato?" selected":""}>${s.l}</option>`).join("")}</select></td>
     <td><input type="date" data-f="dataInvito" value="${esc(i.dataInvito||"")}" aria-label="Data invito" ${S.canWrite?"":"disabled"}></td>
@@ -391,34 +492,43 @@ function viewInviti(){
 
 function viewContatti(){
   const q=S.q.toLowerCase();
-  const rows=S.contacts.filter(c=>!S.cat||c.categoria===S.cat).filter(c=>!q||[fullName(c),c.organizzazione,c.ruolo,c.email,c.telefono,c.provenienza,c.note].join(" ").toLowerCase().includes(q))
-    .sort((a,b)=>(a.cognome||a.nome||a.organizzazione||"").localeCompare(b.cognome||b.nome||b.organizzazione||""));
+  const rows=S.contacts.filter(c=>!S.cat||c.categoria===S.cat).filter(c=>!S.grp||c.gruppo===S.grp).filter(c=>!S.pri||c.priorita===S.pri)
+    .filter(c=>!q||[c.codice,fullName(c),c.organizzazione,c.ruolo,c.email,c.emailAlt,c.telefono,c.provenienza,c.sottocategoria,c.note].join(" ").toLowerCase().includes(q))
+    .sort(S.sort==="id"?(a,b)=>String(a.codice||"").localeCompare(String(b.codice||"")):(a,b)=>(a.cognome||a.nome||a.organizzazione||"").localeCompare(b.cognome||b.nome||b.organizzazione||""));
   const ids=new Set(S.contacts.map(c=>c.id));[...S.sel].forEach(id=>{if(!ids.has(id))S.sel.delete(id)});
   const visSel=rows.filter(c=>S.sel.has(c.id)).length;
   const allOn=rows.length>0&&visSel===rows.length,someOn=visSel>0&&!allOn;
+  const cnt=(f,v)=>S.contacts.filter(x=>x[f]===v).length;
   return`
   <div class="toolbar">
-    <div class="grow"><input type="search" id="q-con" placeholder="Cerca per nome, ente, email, note" value="${esc(S.q)}" aria-label="Cerca nei contatti"></div>
-    <select id="f-cat" aria-label="Filtra per categoria"><option value="">Tutte le categorie</option>${CATS.map(c=>`<option value="${c.k}"${S.cat===c.k?" selected":""}>${c.l} (${S.contacts.filter(x=>x.categoria===c.k).length})</option>`).join("")}</select>
+    <div class="grow"><input type="search" id="q-con" placeholder="Cerca per ID, nome, ente, email, note" value="${esc(S.q)}" aria-label="Cerca nei contatti"></div>
+    <select id="f-cat" aria-label="Filtra per categoria"><option value="">Tutte le categorie</option>${CATS.map(c=>`<option value="${esc(c.k)}"${S.cat===c.k?" selected":""}>${esc(c.l)} (${cnt("categoria",c.k)})</option>`).join("")}</select>
+    <select id="f-grp" aria-label="Filtra per gruppo"><option value="">Tutti i gruppi</option>${GRUPPI.map(g=>`<option value="${esc(g.k)}"${S.grp===g.k?" selected":""}>${esc(g.k)} (${cnt("gruppo",g.k)})</option>`).join("")}</select>
+    <select id="f-pri" aria-label="Filtra per priorità"><option value="">Tutte le priorità</option>${LISTE.priorita.map(p=>`<option value="${esc(p)}"${S.pri===p?" selected":""}>Priorità ${esc(p.toLowerCase())} (${cnt("priorita",p)})</option>`).join("")}</select>
+    <select id="f-sort" aria-label="Ordina"><option value="nome"${S.sort!=="id"?" selected":""}>Ordina per cognome</option><option value="id"${S.sort==="id"?" selected":""}>Ordina per ID</option></select>
+  </div>
+  <div class="toolbar">
+    <span class="hint grow">${rows.length} di ${S.contacts.length} contatti</span>
     <span class="scroll-nav"><button class="btn small" data-act="scroll-l" aria-label="Scorri a sinistra">◀</button><button class="btn small" data-act="scroll-r" aria-label="Scorri a destra">▶</button></span>
     <button class="btn primary w" data-act="new-contact">Nuovo contatto</button>
     <label class="btn w" for="csv-in">Importa CSV</label><input type="file" id="csv-in" accept=".csv,text/csv" hidden>
     <button class="btn" data-act="csv-contatti">Scarica CSV</button>
   </div>
   ${bulkBar()}
-  ${S.contacts.length?`<div class="tbl-wrap scroll" id="scroll-contatti"><table><thead><tr><th><span class="selcell"><input type="checkbox" id="sel-all" aria-label="Seleziona tutti i contatti visibili"${allOn?" checked":""}${someOn?' data-indet="1"':""}>Nome</span></th><th>Organizzazione · ruolo</th><th>Email · telefono</th><th>Categoria</th><th>Provenienza</th><th>Eventi a cui ha partecipato</th><th>Note</th><th class="w"></th></tr></thead><tbody>
-  ${rows.map(c=>`<tr${S.sel.has(c.id)?' class="is-sel"':""}>
-    <td><label class="selcell"><input type="checkbox" name="sel-c" value="${esc(c.id)}" aria-label="Seleziona ${esc(fullName(c))}"${S.sel.has(c.id)?" checked":""}><strong>${esc(fullName(c))}</strong></label></td>
+  ${S.contacts.length?`<div class="tbl-wrap scroll" id="scroll-contatti"><table><thead><tr><th><span class="selcell"><input type="checkbox" id="sel-all" aria-label="Seleziona tutti i contatti visibili"${allOn?" checked":""}${someOn?' data-indet="1"':""}>ID · Nome</span></th><th>Organizzazione · ruolo</th><th>Categoria · sottocategoria</th><th>Email · telefono</th><th>Priorità</th><th>Verifiche</th><th>Eventi a cui ha partecipato</th><th>Note</th><th class="w"></th></tr></thead><tbody>
+  ${rows.map(c=>{const dup=checkDuplicati(c),pr=checkPronto(c),coe=checkCoerenza(c);return`<tr${S.sel.has(c.id)?' class="is-sel"':""}>
+    <td><label class="selcell"><input type="checkbox" name="sel-c" value="${esc(c.id)}" aria-label="Seleziona ${esc(fullName(c))}"${S.sel.has(c.id)?" checked":""}><span><span class="code">${esc(c.codice||"—")}</span><strong>${esc(fullName(c))}</strong><span class="sub">${esc(c.gruppo||"")}</span></span></label></td>
     <td>${esc(c.organizzazione||"—")}<span class="sub">${esc(c.ruolo||"")}</span></td>
+    <td>${c.categoria?`<span class="cat">${esc(c.categoria)}</span>`:`<span class="flag">Da classificare</span>`}<span class="sub">${esc(c.sottocategoria||"")}</span>${coe!=="OK"&&c.categoria?`<span class="flag">${esc(coe)}</span>`:""}</td>
     <td><span class="copyable">${esc(c.email||"—")}</span><span class="sub num">${esc(c.telefono||"")}</span></td>
-    <td><span class="cat">${esc(catLabel(c.categoria))}</span></td>
-    <td>${esc(c.provenienza||"—")}</td>
+    <td>${esc(c.priorita||"—")}</td>
+    <td>${chkPill(pr)}${dup!=="OK"?`<br>${chkPill(dup)}`:""}</td>
     <td>${(c.eventi||[]).map(id=>eventById(id)).filter(Boolean).map(e=>`<span class="evchip">${esc(e.nome)} · ${fmt(e.data)}</span>`).join("")||`<span class="hint">nessuno</span>`}</td>
-    <td style="max-width:260px"><span class="hint">${esc(c.note||"")}</span></td>
+    <td style="max-width:260px"><span class="hint clamp" title="${esc(c.note||"")}">${esc(c.note||"")}</span></td>
     <td class="w"><button class="btn small" data-act="edit-contact" data-id="${esc(c.id)}">Modifica</button></td>
-  </tr>`).join("")||`<tr><td colspan="8"><div class="empty">Nessun contatto corrisponde ai filtri.</div></td></tr>`}
+  </tr>`}).join("")||`<tr><td colspan="9"><div class="empty">Nessun contatto corrisponde ai filtri.</div></td></tr>`}
   </tbody></table></div>
-  <p class="hint" style="margin-top:10px">Importazione CSV: prima riga con le intestazioni nome, cognome, organizzazione, ruolo, email, telefono, categoria, provenienza, note (separatore punto e virgola o virgola). I contatti con un'email già presente vengono saltati.</p>`
+  <p class="hint" style="margin-top:10px">ID: U = contatti forniti da Stand Florio («Base utente»), S = contatti individuati con ricerca («Nuovo suggerimento»), seguiti da un progressivo che non viene mai riutilizzato. Importazione CSV: la prima riga deve contenere le intestazioni, con gli stessi nomi dei campi della scheda (per esempio Nome, Cognome, Organizzazione, Email principale). I contatti con un'email già presente vengono saltati.</p>`
   :`<div class="tbl-wrap"><div class="empty"><strong>La rubrica è vuota</strong>Aggiungi il primo contatto con «Nuovo contatto» o importa un elenco CSV.</div></div>`}`;
 }
 
@@ -484,28 +594,33 @@ function viewEventi(){
 }
 
 /* ---------- foglio contatto ---------- */
-function openSheet(html){$("#sheet-root").innerHTML=`<div class="sheet-back" data-act="close-sheet"></div><aside class="sheet" role="dialog" aria-modal="true">${html}</aside>`;const f=document.querySelector(".sheet input,.sheet select");if(f)f.focus()}
+function openSheet(html){$("#sheet-root").innerHTML=`<div class="sheet-back" data-act="close-sheet"></div><aside class="sheet" role="dialog" aria-modal="true">${html}</aside>`;const f=document.querySelector(".sheet input:not([readonly]),.sheet select");if(f)f.focus()}
 function closeSheet(){$("#sheet-root").innerHTML=""}
+function checksBlock(c){
+  const dup=checkDuplicati(c),pr=checkPronto(c),coe=checkCoerenza(c);
+  return`<div class="checks-row"><span class="hint">Controlli</span>${chkPill(pr)}${chkPill(dup==="OK"?"Nessun duplicato":dup)}${chkPill(coe==="OK"?"Categoria coerente":coe)}</div>`;
+}
+function fmtVal(f,v){
+  if(!v)return"";
+  if(f.t==="date")return esc(fmt(v,true));
+  if(/^https?:\/\//i.test(v))return v.split(/\s*;\s*/).map(u=>/^https?:\/\//i.test(u)?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`:esc(u)).join("<br>");
+  if(f.t==="email"||f.t==="tel")return`<span class="copyable">${esc(v)}</span>`;
+  if(f.k==="categoria")return`<span class="cat">${esc(v)}</span>`;
+  return esc(v);
+}
 function viewContactSheet(c){
   if(!c)return;
-  const v=(x)=>x?esc(x):"";
-  const row=(l,x)=>`<dt>${l}</dt><dd${x?"":' class="empty-v"'}>${x||"—"}</dd>`;
+  const row=(l,x)=>`<dt>${esc(l)}</dt><dd${x?"":' class="empty-v"'}>${x||"—"}</dd>`;
   const evs=(c.eventi||[]).map(id=>eventById(id)).filter(Boolean).sort((a,b)=>(b.data||"").localeCompare(a.data||""));
   const invs=S.invites.filter(i=>i.contactId===c.id).map(i=>({i,e:eventById(i.eventId)})).filter(x=>x.e);
-  openSheet(`<h2>${esc(fullName(c))}</h2>
+  openSheet(`<h2><span class="code">${esc(c.codice||"")}</span>${esc(fullName(c))}</h2>
   <p class="ro-sub">${esc([c.organizzazione,c.ruolo].filter(Boolean).join(" · "))||"Anagrafica del contatto"}</p>
+  ${checksBlock(c)}
+  ${SEZIONI.map(s=>`<h3 class="ro-h">${esc(s.l)}</h3><dl class="ro-grid">${s.f.map(f=>row(f.l,fmtVal(f,c[f.k]))).join("")}</dl>`).join("")}
+  <h3 class="ro-h">Eventi e inviti</h3>
   <dl class="ro-grid">
-    ${row("Nome",v(c.nome))}
-    ${row("Cognome",v(c.cognome))}
-    ${row("Organizzazione",v(c.organizzazione))}
-    ${row("Ruolo",v(c.ruolo))}
-    ${row("Email",c.email?`<span class="copyable">${esc(c.email)}</span>`:"")}
-    ${row("Telefono",c.telefono?`<span class="num">${esc(c.telefono)}</span>`:"")}
-    ${row("Categoria",`<span class="cat">${esc(catLabel(c.categoria))}</span>`)}
-    ${row("Provenienza",v(c.provenienza))}
     ${row("Eventi partecipati",evs.map(e=>`<span class="evchip">${esc(e.nome)} · ${fmt(e.data)}</span>`).join(""))}
     ${row("Inviti",invs.length?`<div class="ro-inv">${invs.map(({i,e})=>`<div>${esc(e.nome)}: <span class="pill st-${esc(i.stato)}">${esc(statoLabel(i.stato))}</span>${i.ruoloEvento?` <span class="hint">· ${esc(i.ruoloEvento)}</span>`:""}</div>`).join("")}</div>`:"")}
-    ${row("Note",v(c.note))}
   </dl>
   <div class="sheet-actions">
     <span class="hint">Per modificare i dati usa la scheda Contatti.</span>
@@ -513,40 +628,64 @@ function viewContactSheet(c){
   </div>`);
   const b=document.querySelector(".sheet [data-act=close-sheet]");if(b)b.focus();
 }
+function fieldInput(f,c,isNew){
+  const id="c-"+f.k,v=c[f.k]??"";
+  const lab=(inner)=>`<label class="${f.full?"full":""}" for="${id}">${esc(f.l)}${inner}</label>`;
+  const opts=(list,cur,blank)=>(blank?`<option value="">—</option>`:"")+list.map(o=>`<option value="${esc(o)}"${o===cur?" selected":""}>${esc(o)}</option>`).join("")+(cur&&!list.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)} (valore non in elenco)</option>`:"");
+  switch(f.t){
+    case"code":return lab(`<input type="text" id="${id}" value="${esc(isNew?"Assegnato al salvataggio":v)}" readonly>`);
+    case"select":return lab(`<select id="${id}">${opts(LISTE[f.k]||[],v,!LISTE[f.k]||!LISTE[f.k].includes(v)&&!v)}</select>`);
+    case"cat":return lab(`<select id="${id}">${opts(CATS.map(x=>x.k),v,true)}</select>`);
+    case"subcat":return lab(`<select id="${id}">${opts(SUBCATS[c.categoria]||[],v,true)}</select>`);
+    case"prov":return lab(`<input type="text" id="${id}" list="prov-list" value="${esc(v)}"><datalist id="prov-list">${PROVENIENZE.map(p=>`<option value="${esc(p)}">`).join("")}</datalist>`);
+    case"area":return lab(`<textarea id="${id}">${esc(v)}</textarea>`);
+    case"date":return lab(`<input type="date" id="${id}" value="${esc(v)}">`);
+    case"email":return lab(`<input type="email" id="${id}" value="${esc(v)}">`);
+    case"tel":return lab(`<input type="tel" id="${id}" value="${esc(v)}">`);
+    default:return lab(`<input type="text" id="${id}" value="${esc(v)}">`);
+  }
+}
 function contactSheet(c){
-  const isNew=!c; c=c||{categoria:"giornalisti",provenienza:"Contatto diretto",eventi:[]};
+  const isNew=!c; c=c||{...DEFAULTS,eventi:[]};
   const evs=[...S.events].sort((a,b)=>(b.data||"").localeCompare(a.data||""));
   const invs=isNew?[]:S.invites.filter(i=>i.contactId===c.id);
-  openSheet(`<h2>${isNew?"Nuovo contatto":esc(fullName(c))}</h2>
-  <form id="c-form" class="form" data-id="${esc(c.id||"")}">
-    <label for="c-nome">Nome<input type="text" id="c-nome" value="${esc(c.nome||"")}"></label>
-    <label for="c-cognome">Cognome<input type="text" id="c-cognome" value="${esc(c.cognome||"")}"></label>
-    <label class="full" for="c-org">Organizzazione<input type="text" id="c-org" value="${esc(c.organizzazione||"")}"></label>
-    <label class="full" for="c-ruolo">Ruolo<input type="text" id="c-ruolo" value="${esc(c.ruolo||"")}"></label>
-    <label for="c-email">Email<input type="email" id="c-email" value="${esc(c.email||"")}"></label>
-    <label for="c-tel">Telefono<input type="tel" id="c-tel" value="${esc(c.telefono||"")}"></label>
-    <label for="c-cat">Categoria<select id="c-cat">${CATS.map(x=>`<option value="${x.k}"${x.k===c.categoria?" selected":""}>${x.l}</option>`).join("")}</select></label>
-    <label for="c-prov">Provenienza del contatto<input type="text" id="c-prov" list="prov-list" value="${esc(c.provenienza||"")}"><datalist id="prov-list">${PROVENIENZE.map(p=>`<option value="${esc(p)}">`).join("")}</datalist></label>
-    <label class="full" for="c-note">Note<textarea id="c-note">${esc(c.note||"")}</textarea></label>
+  openSheet(`<h2>${isNew?"Nuovo contatto":`<span class="code">${esc(c.codice||"")}</span>${esc(fullName(c))}`}</h2>
+  ${isNew?"":checksBlock(c)}
+  <form id="c-form" data-id="${esc(c.id||"")}">
+    ${SEZIONI.map(s=>`<details class="fsec"${s.open?" open":""}><summary>${esc(s.l)}</summary><div class="form">${s.f.map(f=>fieldInput(f,c,isNew)).join("")}</div></details>`).join("")}
+    <details class="fsec" open><summary>Eventi e inviti</summary><div class="form">
     <div class="full"><div class="hint" style="margin-bottom:6px">Eventi allo Stand Florio a cui ha partecipato</div>
       <div class="checks">${evs.length?evs.map(e=>`<label><input type="checkbox" name="c-ev" value="${esc(e.id)}"${(c.eventi||[]).includes(e.id)?" checked":""}> ${esc(e.nome)} · ${fmt(e.data,true)}</label>`).join(""):`<span class="hint">Nessun evento registrato.</span>`}</div></div>
     ${invs.length?`<div class="full"><div class="hint" style="margin-bottom:6px">Inviti</div>${invs.map(i=>{const e=eventById(i.eventId);return e?`<div>${esc(e.nome)}: <span class="pill st-${esc(i.stato)}">${esc(statoLabel(i.stato))}</span></div>`:""}).join("")}</div>`:""}
-    <p id="c-err" class="full" style="color:var(--bad);margin:0" hidden>Inserisci almeno un nome o un'organizzazione.</p>
+    </div></details>
+    <p id="c-err" style="color:var(--bad);margin:10px 0 0" hidden>Inserisci almeno un nome o un'organizzazione.</p>
   </form>
   <div class="sheet-actions">
     <div>${isNew?"":`<button class="btn danger w" data-act="del-contact" data-id="${esc(c.id)}">Elimina contatto</button>`}</div>
     <div style="display:flex;gap:10px"><button class="btn" data-act="close-sheet">Annulla</button><button class="btn primary w" data-act="save-contact">Salva</button></div>
   </div>`);
 }
+function refreshSubcat(){
+  const cat=$("#c-categoria"),sub=$("#c-sottocategoria");if(!cat||!sub)return;
+  const cur=sub.value,list=SUBCATS[cat.value]||[];
+  sub.innerHTML=`<option value="">—</option>`+list.map(o=>`<option value="${esc(o)}"${o===cur?" selected":""}>${esc(o)}</option>`).join("");
+}
 async function saveContact(){
   const f=$("#c-form"),id=f.dataset.id;
-  const data={nome:$("#c-nome").value.trim(),cognome:$("#c-cognome").value.trim(),organizzazione:$("#c-org").value.trim(),ruolo:$("#c-ruolo").value.trim(),
-    email:$("#c-email").value.trim(),telefono:$("#c-tel").value.trim(),categoria:$("#c-cat").value,provenienza:$("#c-prov").value.trim(),note:$("#c-note").value.trim(),
-    eventi:[...document.querySelectorAll('input[name="c-ev"]:checked')].map(x=>x.value),aggiornato:todayStr()};
-  if(!data.nome&&!data.cognome&&!data.organizzazione){$("#c-err").hidden=false;return}
-  if(data.email&&S.contacts.some(c=>c.id!==id&&(c.email||"").toLowerCase()===data.email.toLowerCase())){toast("Esiste già un contatto con questa email.");return}
-  const ok=await w(async()=>{if(id)await S.db.collection("contacts").doc(id).update(data);else{data.creato=todayStr();await S.db.collection("contacts").doc().set(data)}});
-  if(ok){closeSheet();toast(id?"Contatto aggiornato":"Contatto aggiunto")}
+  const data={};
+  CAMPI.forEach(fl=>{if(fl.t==="code")return;const el=document.getElementById("c-"+fl.k);if(el)data[fl.k]=el.value.trim()});
+  data.eventi=[...document.querySelectorAll('input[name="c-ev"]:checked')].map(x=>x.value);
+  data.aggiornato=todayStr();
+  if(!data.nome&&!data.cognome&&!data.organizzazione){$("#c-err").hidden=false;$("#c-err").scrollIntoView({block:"nearest"});return}
+  if(data.email&&S.contacts.some(c=>c.id!==id&&normEmail(c.email)===normEmail(data.email))){toast("Esiste già un contatto con questa email principale.");return}
+  let ok;
+  if(id){ok=await w(()=>S.db.collection("contacts").doc(id).update(data))}
+  else{
+    const nc=nextCode(data.gruppo);data.codice=nc.code;data.creato=todayStr();
+    ok=await w(()=>S.db.collection("contacts").doc(nc.code.toLowerCase()).set(data));
+    if(ok)await w(()=>S.db.doc("settings/main").set({...S.settings,maxCodes:{...(S.settings.maxCodes||{}),[nc.p]:nc.n}}));
+  }
+  if(ok){closeSheet();toast(id?"Contatto aggiornato":`Contatto aggiunto con ID ${data.codice}`)}
 }
 
 function addSheet(){
@@ -557,7 +696,7 @@ function addSheet(){
   <div class="toolbar"><input type="search" id="add-q" placeholder="Filtra" style="flex:1 1 160px" aria-label="Filtra contatti">
   <select id="add-cat" aria-label="Categoria"><option value="">Tutte le categorie</option>${CATS.map(c=>`<option value="${c.k}">${c.l}</option>`).join("")}</select></div>
   <div class="toolbar"><button class="btn small" data-act="add-all">Seleziona tutti i visibili</button><span class="hint" id="add-count">0 selezionati</span></div>
-  <div class="addlist" id="add-list">${avail.length?avail.map(c=>`<label data-cat="${esc(c.categoria)}" data-txt="${esc((fullName(c)+" "+(c.organizzazione||"")).toLowerCase())}"><input type="checkbox" name="add-c" value="${esc(c.id)}"><span><strong>${esc(fullName(c))}</strong><span class="hint"> · ${esc(c.organizzazione||"")}</span><br><span class="cat">${esc(catLabel(c.categoria))}</span></span></label>`).join(""):`<div class="empty">Tutti i contatti della rubrica sono già nel piano inviti.</div>`}</div>
+  <div class="addlist" id="add-list">${avail.length?avail.map(c=>`<label data-cat="${esc(c.categoria)}" data-txt="${esc(((c.codice||"")+" "+fullName(c)+" "+(c.organizzazione||"")).toLowerCase())}"><input type="checkbox" name="add-c" value="${esc(c.id)}"><span><span class="code">${esc(c.codice||"")}</span><strong>${esc(fullName(c))}</strong><span class="hint"> · ${esc(c.organizzazione||"")}</span><br><span class="cat">${esc(catLabel(c.categoria))}</span></span></label>`).join(""):`<div class="empty">Tutti i contatti della rubrica sono già nel piano inviti.</div>`}</div>
   <label for="add-stato" class="hint" style="display:grid;gap:4px;max-width:260px">Stato iniziale<select id="add-stato"><option value="da_invitare">Da invitare</option><option value="invitato">Invitato oggi</option></select></label>
   <div class="sheet-actions"><span></span><div style="display:flex;gap:10px"><button class="btn" data-act="close-sheet">Annulla</button><button class="btn primary" data-act="add-confirm">Aggiungi selezionati</button></div></div>`);
 }
@@ -591,11 +730,15 @@ async function saveFile(name,text,mime){
   try{const url=URL.createObjectURL(new Blob([text],{type:mime}));const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000)}catch(e){toast("Download non riuscito.")}
 }
 function download(name,rows){return saveFile(name,"﻿"+rows.map(r=>r.map(csvCell).join(";")).join("\r\n"),"text/csv;charset=utf-8")}
-function csvContatti(){const rows=[["Nome","Cognome","Organizzazione","Ruolo","Email","Telefono","Categoria","Provenienza","Eventi partecipati","Note"]];
-  S.contacts.forEach(c=>rows.push([c.nome,c.cognome,c.organizzazione,c.ruolo,c.email,c.telefono,catLabel(c.categoria),c.provenienza,(c.eventi||[]).map(id=>{const e=eventById(id);return e?e.nome+" ("+e.data+")":""}).filter(Boolean).join(" | "),c.note]));
+function csvContatti(){
+  const head=[...CAMPI.map(f=>f.l),"Eventi partecipati","Controllo duplicati","Pronto al contatto","Coerenza categoria"];
+  const rows=[head];
+  [...S.contacts].sort((a,b)=>String(a.codice||"").localeCompare(String(b.codice||""))).forEach(c=>rows.push([...CAMPI.map(f=>c[f.k]??""),
+    (c.eventi||[]).map(id=>{const e=eventById(id);return e?e.nome+" ("+e.data+")":""}).filter(Boolean).join(" | "),
+    checkDuplicati(c),checkPronto(c),checkCoerenza(c)]));
   download("rubrica-stand-florio-"+todayStr()+".csv",rows)}
-function csvInviti(){const ev=curEvent();if(!ev)return;const rows=[["Nome","Cognome","Organizzazione","Categoria","Email","Telefono","Ruolo nell'evento","Stato","Data invito","Data sollecito","Data risposta","Accompagnatori","Presente","Note"]];
-  invitesFor(ev.id).forEach(i=>{const c=contactById(i.contactId);if(c)rows.push([c.nome,c.cognome,c.organizzazione,catLabel(c.categoria),c.email,c.telefono,i.ruoloEvento,statoLabel(i.stato),i.dataInvito,i.dataSollecito,i.dataRisposta,i.accompagnatori||0,i.presente?"sì":"",i.note])});
+function csvInviti(){const ev=curEvent();if(!ev)return;const rows=[["ID","Nome","Cognome","Organizzazione","Categoria","Sottocategoria","Email principale","Telefono","Ruolo nell'evento","Stato","Data invito","Data sollecito","Data risposta","Accompagnatori","Presente","Note","Pronto al contatto"]];
+  invitesFor(ev.id).forEach(i=>{const c=contactById(i.contactId);if(c)rows.push([c.codice,c.nome,c.cognome,c.organizzazione,c.categoria,c.sottocategoria,c.email,c.telefono,i.ruoloEvento,statoLabel(i.stato),i.dataInvito,i.dataSollecito,i.dataRisposta,i.accompagnatori||0,i.presente?"sì":"",i.note,checkPronto(c)])});
   download("inviti-"+ev.id+"-"+todayStr()+".csv",rows)}
 function parseCSV(text){
   text=text.replace(/^﻿/,"");const first=text.split(/\r?\n/)[0]||"";const sep=(first.match(/;/g)||[]).length>=(first.match(/,/g)||[]).length?";":",";
@@ -608,19 +751,33 @@ function parseCSV(text){
 }
 async function importCSV(file){
   const rows=parseCSV(await file.text()); if(rows.length<2){toast("Il file non contiene righe di contatti.");return}
-  const norm=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z]/g,"");
-  const map={nome:["nome","name"],cognome:["cognome","surname","lastname"],organizzazione:["organizzazione","ente","azienda","testata","societa"],ruolo:["ruolo","qualifica","carica"],email:["email","mail","posta"],telefono:["telefono","tel","cellulare","cell"],categoria:["categoria","category"],provenienza:["provenienza","fonte","origine"],note:["note","notes"]};
-  const head=rows[0].map(norm),idx={};for(const k in map){idx[k]=head.findIndex(h=>map[k].includes(h))}
+  const norm=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z]/g,"");
+  /* intestazioni riconosciute: le etichette della scheda più alcuni sinonimi */
+  const syn={nome:["name"],cognome:["surname","lastname"],organizzazione:["ente","azienda","testata","societa"],ruolo:["qualifica","carica"],
+    email:["email","mail","posta"],telefono:["tel","cellulare","cell"],categoria:["category"],provenienza:["origine"],note:["notes","note"],codice:["id","codice"]};
+  const head=rows[0].map(norm),idx={};
+  CAMPI.forEach(f=>{const names=[norm(f.l),norm(f.k),...(syn[f.k]||[])];idx[f.k]=head.findIndex(h=>names.includes(h))});
   if(idx.nome<0&&idx.organizzazione<0&&idx.email<0){toast("Intestazioni non riconosciute: servono almeno nome, organizzazione o email.");return}
-  const emails=new Set(S.contacts.map(c=>(c.email||"").toLowerCase()).filter(Boolean));
-  const catOf=v=>{const n=norm(v||"");if(!n)return"altri";const hit=CATS.find(c=>c.k===n||norm(c.l).includes(n)||n.includes(c.k.slice(0,6)));return hit?hit.k:"altri"};
-  let ok=0,skip=0;
-  for(const r of rows.slice(1)){const g=k=>idx[k]>=0?(r[idx[k]]||"").trim():"";
-    const d={nome:g("nome"),cognome:g("cognome"),organizzazione:g("organizzazione"),ruolo:g("ruolo"),email:g("email"),telefono:g("telefono"),categoria:catOf(g("categoria")),provenienza:g("provenienza")||"Importazione CSV",note:g("note"),eventi:[],creato:todayStr(),aggiornato:todayStr()};
+  const emails=new Set(S.contacts.map(c=>normEmail(c.email)).filter(Boolean));
+  const codes=new Set(S.contacts.map(c=>c.codice).filter(Boolean));
+  let ok=0,skip=0;const maxCodes={...(S.settings.maxCodes||{})};
+  for(const r of rows.slice(1)){
+    const d={...DEFAULTS,provenienza:"Importazione CSV"};
+    CAMPI.forEach(f=>{if(idx[f.k]>=0){const v=(r[idx[f.k]]||"").trim();if(v)d[f.k]=v}});
+    if(!LISTE.gruppo.includes(d.gruppo))d.gruppo=DEFAULTS.gruppo;
+    if(d.categoria&&!SUBCATS[d.categoria]){d.note=[d.note,"Categoria originale: "+d.categoria].filter(Boolean).join(" — ");d.categoria=""}
     if(!d.nome&&!d.cognome&&!d.organizzazione&&!d.email)continue;
-    if(d.email&&emails.has(d.email.toLowerCase())){skip++;continue}
-    const res=await w(()=>S.db.collection("contacts").doc().set(d)); if(!res)break; ok++; if(d.email)emails.add(d.email.toLowerCase());
+    if(d.email&&emails.has(normEmail(d.email))){skip++;continue}
+    if(!d.codice||codes.has(d.codice)||!/^[US]\d{3,}$/.test(d.codice)){
+      const p=prefixOf(d.gruppo),used=[...codes].filter(x=>x[0]===p).map(x=>parseInt(x.slice(1))||0);
+      const n=Math.max(maxCodes[p]||0,0,...used)+1;d.codice=p+String(n).padStart(3,"0");
+    }
+    const p=d.codice[0],n=parseInt(d.codice.slice(1))||0;maxCodes[p]=Math.max(maxCodes[p]||0,n);
+    d.eventi=[];d.creato=todayStr();d.aggiornato=todayStr();
+    const res=await w(()=>S.db.collection("contacts").doc(d.codice.toLowerCase()).set(d)); if(!res)break;
+    ok++;codes.add(d.codice);if(d.email)emails.add(normEmail(d.email));
   }
+  if(ok)await w(()=>S.db.doc("settings/main").set({...S.settings,maxCodes}));
   toast(`Importati ${ok} contatti${skip?`, ${skip} saltati perché già presenti`:""}`);
 }
 
@@ -654,7 +811,7 @@ document.addEventListener("click",async e=>{
   else if(a==="new-contact")contactSheet(null);
   else if(a==="edit-contact")contactSheet(contactById(id));
   else if(a==="view-contact")viewContactSheet(contactById(id));
-  else if(a==="goto-contact"){const c=contactById(id);closeSheet();S.tab="contatti";S.cat="";S.stato="";S.q=c?fullName(c):"";try{history.replaceState(null,"","#contatti")}catch(_){}render()}
+  else if(a==="goto-contact"){const c=contactById(id);closeSheet();S.tab="contatti";S.cat="";S.grp="";S.pri="";S.stato="";S.q=c?(c.codice||fullName(c)):"";try{history.replaceState(null,"","#contatti")}catch(_){}render()}
   else if(a==="save-contact")saveContact();
   else if(a==="del-contact"){if(rmArmed!==id){rmArmed=id;t.textContent="Conferma eliminazione";return}
     const invs=S.invites.filter(i=>i.contactId===id);for(const i of invs)await w(()=>S.db.collection("invites").doc(i.id).delete());
@@ -678,6 +835,10 @@ document.addEventListener("change",async e=>{
   const el=e.target;
   if(el.id==="evsel"){S.eventId=el.value;render();return}
   if(el.id==="f-cat"){S.cat=el.value;render();return}
+  if(el.id==="f-grp"){S.grp=el.value;render();return}
+  if(el.id==="f-pri"){S.pri=el.value;render();return}
+  if(el.id==="f-sort"){S.sort=el.value;render();return}
+  if(el.id==="c-categoria"){refreshSubcat();return}
   if(el.name==="sel-c"){el.checked?S.sel.add(el.value):S.sel.delete(el.value);rmArmed=null;render();return}
   if(el.id==="sel-all"){const vis=[...document.querySelectorAll('#view input[name="sel-c"]')].map(x=>x.value);el.checked?vis.forEach(id=>S.sel.add(id)):vis.forEach(id=>S.sel.delete(id));rmArmed=null;render();return}
   if(el.id==="csv-in"&&el.files[0]){importCSV(el.files[0]);el.value="";return}
@@ -1042,6 +1203,2207 @@ const SEED={
  }
 };
 
+/* ---------- aggiornamento una tantum dei dati salvati (versione 3, 5 novembre 2026) ----------
+   Unisce la rubrica del cerimoniale aggiornata al 20 ottobre 2026 (42 contatti) con i contatti già presenti:
+   - per i contatti in comune prevalgono i dati del file, ma restano note, provenienza, eventi e inviti della rubrica;
+   - i contatti della rubrica assenti dal file ricevono un codice U a partire da U031;
+   - tutti i contatti ricevono i nuovi campi e le categorie del cerimoniale.
+   Prima dell'aggiornamento i dati precedenti vengono copiati nella chiave sf-rubrica-dati-v2-backup. */
+const RUBRICA_20_OTTOBRE=[
+{
+"codice": "S001",
+"gruppo": "Nuovo suggerimento",
+"nome": "Giuseppe",
+"cognome": "Federico",
+"organizzazione": "Comune di Palermo – II Circoscrizione",
+"ruolo": "Presidente",
+"categoria": "Autorità amministrative",
+"territorio": "Romagnolo / costa sud",
+"priorita": "Alta",
+"motivoInvito": "Rappresentanza territoriale e raccordo con il quartiere",
+"email": "giuseppe.federico@comune.palermo.it",
+"emailAlt": "",
+"telefono": "3294184067",
+"statoRecapiti": "Pubblicato; da riconfermare",
+"fonteUrl": "https://www.comune.palermo.it/persona_pubblica/giuseppe-federico/",
+"dataAcquisizione": "2026-10-17",
+"note": "Verificare disponibilità e canale preferito.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare referente e modalità di invito",
+"scadenzaAzione": "",
+"fonteNominativo": "Giuseppe Federico",
+"verificaIdentita": "Da riconfermare",
+"sottocategoria": "Circoscrizioni",
+"tema": "Istituzioni e politiche pubbliche",
+"indirizzo": "Via San Ciro, 15",
+"cap": "",
+"comune": "Palermo",
+"provincia": "PA",
+"pec": "secondacircoscrizione@cert.comune.palermo.it",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "0917409618",
+"sito": "https://www.comune.palermo.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://www.comune.palermo.it/amministrazione/unita_organizzativa/ii-circoscrizione-prima-commissione-consiliare/",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Costa Sud / Romagnolo"
+},
+{
+"codice": "S002",
+"gruppo": "Nuovo suggerimento",
+"nome": "Maurizio",
+"cognome": "Artale",
+"organizzazione": "Centro di Accoglienza Padre Nostro ETS",
+"ruolo": "Presidente",
+"categoria": "Associazioni e territorio",
+"territorio": "Brancaccio",
+"priorita": "Alta",
+"motivoInvito": "Rete sociale e partecipazione del territorio",
+"email": "info@centropadrenostro.it",
+"emailAlt": "",
+"telefono": "0916301150",
+"statoRecapiti": "Pubblicato; da riconfermare",
+"fonteUrl": "https://www.centropadrenostro.it/mobile/articoli.asp?ID=136",
+"dataAcquisizione": "2026-10-17",
+"note": "Recapito generale del Centro.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare referente e modalità di invito",
+"scadenzaAzione": "",
+"fonteNominativo": "Maurizio Artale",
+"verificaIdentita": "Da riconfermare",
+"sottocategoria": "ETS e volontariato sociale",
+"tema": "Sociale e comunità",
+"indirizzo": "Via Brancaccio, 210",
+"cap": "90124",
+"comune": "Palermo",
+"provincia": "PA",
+"pec": "info@pec.centropadrenostro.it",
+"referenteSegreteria": "",
+"emailSegreteria": "info@centropadrenostro.it",
+"telSegreteria": "0916301150",
+"sito": "https://www.centropadrenostro.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://www.centropadrenostro.it/mobile/articoli.asp?ID=136",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Brancaccio / Maredolce"
+},
+{
+"codice": "S003",
+"gruppo": "Nuovo suggerimento",
+"nome": "Laura",
+"cognome": "Anello",
+"organizzazione": "Fondazione Le Vie dei Tesori",
+"ruolo": "Presidente",
+"categoria": "Cultura e patrimonio",
+"territorio": "Palermo",
+"priorita": "Alta",
+"motivoInvito": "Patrimonio Florio e rete di turismo culturale",
+"email": "segreteria@leviedeitesori.it",
+"emailAlt": "",
+"telefono": "0918421273",
+"statoRecapiti": "Pubblicato; da riconfermare",
+"fonteUrl": "https://www.leviedeitesori.com/il-team/ ; https://turismo.comune.palermo.it/palermo-welcome-new-dettaglio.php?id=43354",
+"dataAcquisizione": "2026-10-17",
+"note": "Segreteria generale; verificare agenda durante il festival.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare referente e modalità di invito",
+"scadenzaAzione": "",
+"fonteNominativo": "Laura Anello",
+"verificaIdentita": "Da riconfermare",
+"sottocategoria": "Fondazioni culturali",
+"tema": "Cultura e patrimonio",
+"indirizzo": "Via Duca della Verdura, 32",
+"cap": "",
+"comune": "Palermo",
+"provincia": "PA",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "segreteria@leviedeitesori.it",
+"telSegreteria": "0918421273",
+"sito": "https://turismo.comune.palermo.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://turismo.comune.palermo.it/palermo-welcome-new-dettaglio.php?id=43354",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Palermo città"
+},
+{
+"codice": "S004",
+"gruppo": "Nuovo suggerimento",
+"nome": "Gabriella",
+"cognome": "Favara",
+"organizzazione": "Assovini Sicilia",
+"ruolo": "Presidente",
+"categoria": "Rappresentanze economiche",
+"territorio": "Sicilia",
+"priorita": "Alta",
+"motivoInvito": "Coinvolgere la filiera del vino siciliano",
+"email": "web@assovinisicilia.it",
+"emailAlt": "",
+"telefono": "091423464",
+"statoRecapiti": "Pubblicato; da riconfermare",
+"fonteUrl": "https://www.assovinisicilia.it/assovinisicilia/",
+"dataAcquisizione": "2026-10-17",
+"note": "Presidenza riportata nel rinnovo 2026. Recapito generale.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare referente e modalità di invito",
+"scadenzaAzione": "",
+"fonteNominativo": "Gabriella Favara",
+"verificaIdentita": "Da riconfermare",
+"sottocategoria": "Consorzi e associazioni del vino",
+"tema": "Vino e Marsala",
+"indirizzo": "Viale Aurelio Drago, 38",
+"cap": "90129",
+"comune": "Palermo",
+"provincia": "PA",
+"pec": "info@pec.assovinisicilia.it",
+"referenteSegreteria": "",
+"emailSegreteria": "web@assovinisicilia.it",
+"telSegreteria": "091423464",
+"sito": "https://www.assovinisicilia.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://www.assovinisicilia.it/assovinisicilia/",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Sicilia"
+},
+{
+"codice": "S005",
+"gruppo": "Nuovo suggerimento",
+"nome": "Fabrizio",
+"cognome": "Carrera",
+"organizzazione": "Cronache di Gusto",
+"ruolo": "Direttore",
+"categoria": "Stampa",
+"territorio": "Palermo",
+"priorita": "Alta",
+"motivoInvito": "Interesse editoriale per Marsala, tonno e cultura gastronomica",
+"email": "redazione@cronachedigusto.it",
+"emailAlt": "",
+"telefono": "091336915",
+"statoRecapiti": "Pubblicato; da riconfermare",
+"fonteUrl": "https://www.cronachedigusto.it/autore/fabrizio-carrera/ ; https://www.cronachedigusto.it/magazine/page/",
+"dataAcquisizione": "2026-10-17",
+"note": "Recapito redazione. Distinguere invito editoriale da accordi pubblicitari.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare referente e modalità di invito",
+"scadenzaAzione": "",
+"fonteNominativo": "Fabrizio Carrera",
+"verificaIdentita": "Da riconfermare",
+"sottocategoria": "Testate online",
+"tema": "Enogastronomia",
+"indirizzo": "Via Giuseppe Alessi, 44",
+"cap": "90143",
+"comune": "Palermo",
+"provincia": "PA",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "redazione@cronachedigusto.it",
+"telSegreteria": "091336915",
+"sito": "https://www.cronachedigusto.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://www.cronachedigusto.it/magazine/page/",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Trapani e provincia"
+},
+{
+"codice": "S006",
+"gruppo": "Nuovo suggerimento",
+"nome": "Maurizio",
+"cognome": "Carta",
+"organizzazione": "Comune di Palermo",
+"ruolo": "Assessore urbanistica e pianificazione costiera",
+"categoria": "Autorità amministrative",
+"territorio": "Palermo / costa sud",
+"priorita": "Alta",
+"motivoInvito": "Valorizzazione della costa sud e del patrimonio urbano",
+"email": "m.carta@comune.palermo.it",
+"emailAlt": "",
+"telefono": "0917406902",
+"statoRecapiti": "Pubblicato; da riconfermare",
+"fonteUrl": "https://www.comune.palermo.it/persona_pubblica/maurizio-carta/",
+"dataAcquisizione": "2026-10-17",
+"note": "Riconfermare deleghe alla data dell’invito. Nominativo indicato anche dall’utente nelle successive aggiunte; mantenuta una sola scheda.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare referente e modalità di invito",
+"scadenzaAzione": "",
+"fonteNominativo": "Maurizio Carta",
+"verificaIdentita": "Da riconfermare",
+"sottocategoria": "Comune – Assessorati",
+"tema": "Rigenerazione urbana e costa",
+"indirizzo": "Foro Umberto I, 14 – Ex Noviziato dei Crociferi",
+"cap": "",
+"comune": "Palermo",
+"provincia": "PA",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "m.carta@comune.palermo.it",
+"telSegreteria": "0917406902",
+"sito": "https://www.comune.palermo.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://www.comune.palermo.it/persona_pubblica/maurizio-carta/",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Costa Sud / Romagnolo"
+},
+{
+"codice": "S007",
+"gruppo": "Nuovo suggerimento",
+"nome": "Roberto",
+"cognome": "Lagalla",
+"organizzazione": "Comune di Palermo",
+"ruolo": "Sindaco",
+"categoria": "Autorità amministrative",
+"territorio": "Palermo",
+"priorita": "Media",
+"motivoInvito": "Rappresentanza istituzionale della città",
+"email": "sindaco@comune.palermo.it",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Pubblicato; da riconfermare",
+"fonteUrl": "https://web.comune.palermo.it/sindaco.php",
+"dataAcquisizione": "2026-10-17",
+"note": "Invito tramite segreteria; disponibilità da acquisire.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare referente e modalità di invito",
+"scadenzaAzione": "",
+"fonteNominativo": "Roberto Lagalla",
+"verificaIdentita": "Da riconfermare",
+"sottocategoria": "Comune – Sindaco e Gabinetto",
+"tema": "Istituzioni e politiche pubbliche",
+"indirizzo": "Piazza Pretoria, 1",
+"cap": "",
+"comune": "Palermo",
+"provincia": "PA",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "segreteriasindaco@comune.palermo.it",
+"telSegreteria": "0917402350",
+"sito": "https://repository.comune.palermo.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://repository.comune.palermo.it/amministrazione-trasparente.php?grp=3&id=31&lev=3&sel=586&tipo=11",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Palermo città"
+},
+{
+"codice": "S008",
+"gruppo": "Nuovo suggerimento",
+"nome": "Alessandro",
+"cognome": "Anello",
+"organizzazione": "Comune di Palermo",
+"ruolo": "Assessore turismo e sport",
+"categoria": "Autorità amministrative",
+"territorio": "Palermo",
+"priorita": "Media",
+"motivoInvito": "Promozione turistica dell’iniziativa",
+"email": "assessoratoturismoesport@comune.palermo.it",
+"emailAlt": "",
+"telefono": "0917409112",
+"statoRecapiti": "Pubblicato; da riconfermare",
+"fonteUrl": "https://www.comune.palermo.it/persona_pubblica/alessandro-anello/",
+"dataAcquisizione": "2026-10-17",
+"note": "Recapito assessorato; riconfermare deleghe.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare referente e modalità di invito",
+"scadenzaAzione": "",
+"fonteNominativo": "Alessandro Anello",
+"verificaIdentita": "Da riconfermare",
+"sottocategoria": "Comune – Assessorati",
+"tema": "Turismo",
+"indirizzo": "Villa Marraffa, Piazzetta Scannaserpe, 1",
+"cap": "",
+"comune": "Palermo",
+"provincia": "PA",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "assessoratoturismoesport@comune.palermo.it",
+"telSegreteria": "0917409112",
+"sito": "https://www.comune.palermo.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://www.comune.palermo.it/persona_pubblica/alessandro-anello/",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Palermo città"
+},
+{
+"codice": "S009",
+"gruppo": "Nuovo suggerimento",
+"nome": "Maria Concetta",
+"cognome": "Di Natale",
+"organizzazione": "Fondazione Sicilia",
+"ruolo": "Presidente",
+"categoria": "Cultura e patrimonio",
+"territorio": "Palermo",
+"priorita": "Media",
+"motivoInvito": "Patrimonio storico e relazioni con fondazioni culturali",
+"email": "info@fondazionesicilia.it",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Pubblicato; da riconfermare",
+"fonteUrl": "https://www.fondazionesicilia.it/organi/ ; https://www.fondazionesicilia.it/staff/",
+"dataAcquisizione": "2026-10-17",
+"note": "Recapito generale della Fondazione.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare referente e modalità di invito",
+"scadenzaAzione": "",
+"fonteNominativo": "Maria Concetta Di Natale",
+"verificaIdentita": "Da riconfermare",
+"sottocategoria": "Fondazioni culturali",
+"tema": "Cultura e patrimonio",
+"indirizzo": "Largo Gae Aulenti, 2",
+"cap": "90133",
+"comune": "Palermo",
+"provincia": "PA",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "info@fondazionesicilia.it",
+"telSegreteria": "",
+"sito": "https://www.fondazionesicilia.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://www.fondazionesicilia.it/staff/",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Palermo città"
+},
+{
+"codice": "S010",
+"gruppo": "Nuovo suggerimento",
+"nome": "Massimo",
+"cognome": "Midiri",
+"organizzazione": "Università degli Studi di Palermo",
+"ruolo": "Rettore",
+"categoria": "Università e formazione",
+"territorio": "Palermo",
+"priorita": "Media",
+"motivoInvito": "Relazioni con ateneo e valorizzazione culturale",
+"email": "rettore@unipa.it",
+"emailAlt": "",
+"telefono": "09123893444",
+"statoRecapiti": "Pubblicato; da riconfermare",
+"fonteUrl": "https://www.unipa.it/ateneo/.content/documenti/delegati_Rettore_Midiri/nomina_delegato_Garro.pdf",
+"dataAcquisizione": "2026-10-17",
+"note": "Recapito Ufficio di Gabinetto. Valutare invito a delegato.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare referente e modalità di invito",
+"scadenzaAzione": "",
+"fonteNominativo": "Massimo Midiri",
+"verificaIdentita": "Da riconfermare",
+"sottocategoria": "Rettorato e governance",
+"tema": "Cultura e patrimonio",
+"indirizzo": "Palazzo Chiaramonte Steri, Piazza Marina, 61",
+"cap": "90133",
+"comune": "Palermo",
+"provincia": "PA",
+"pec": "pec@cert.unipa.it",
+"referenteSegreteria": "",
+"emailSegreteria": "rettore@unipa.it",
+"telSegreteria": "09123893444",
+"sito": "https://www.unipa.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://www.unipa.it/ateneo/.content/documenti/delegati_Rettore_Midiri/nomina_delegato_Garro.pdf",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Palermo città"
+},
+{
+"codice": "S011",
+"gruppo": "Nuovo suggerimento",
+"nome": "Domenico",
+"cognome": "Ortolano",
+"organizzazione": "Associazione Castello e Parco di Maredolce",
+"ruolo": "Presidente indicato in notizia giugno 2026",
+"categoria": "Associazioni e territorio",
+"territorio": "Brancaccio / Maredolce",
+"priorita": "Alta",
+"motivoInvito": "Collaborazioni culturali locali e memoria del territorio",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "https://www.siciliaunonews.com/2026/06/associazione-castello-e-parco-di.html ; https://www.associazionecastelloeparcodimaredolce.org/",
+"dataAcquisizione": "2026-10-17",
+"note": "VERIFICARE referente: il sito menziona anche Francesco Pintaldi. Nessun recapito reperito.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare referente e modalità di invito",
+"scadenzaAzione": "",
+"fonteNominativo": "Domenico Ortolano",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Associazioni culturali",
+"tema": "Cultura e patrimonio",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Brancaccio / Maredolce"
+},
+{
+"codice": "S012",
+"gruppo": "Nuovo suggerimento",
+"nome": "",
+"cognome": "",
+"organizzazione": "Nino Castiglione Srl",
+"ruolo": "Referente aziendale da individuare",
+"categoria": "Imprese e filiere",
+"territorio": "Erice / Trapani",
+"priorita": "Media",
+"motivoInvito": "Filiera del tonno e storia produttiva siciliana",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "https://www.ninocastiglione.it/etica-e-segnalazioni/",
+"dataAcquisizione": "2026-10-17",
+"note": "Proposta di organizzazione, non di persona. Individuare referente e recapito per eventi.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare referente e modalità di invito",
+"scadenzaAzione": "",
+"fonteNominativo": "",
+"verificaIdentita": "Da riconfermare",
+"sottocategoria": "Pesca, tonno e conserve",
+"tema": "Tonno e cultura del mare",
+"indirizzo": "Contrada San Cusumano",
+"cap": "91016",
+"comune": "Erice",
+"provincia": "TP",
+"pec": "ninocastiglionesrl@legalmail.it",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "https://www.ninocastiglione.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://www.ninocastiglione.it/etica-e-segnalazioni/",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Trapani e provincia"
+},
+{
+"codice": "U001",
+"gruppo": "Base utente",
+"nome": "Stefania",
+"cognome": "Auci",
+"organizzazione": "",
+"ruolo": "Scrittrice",
+"categoria": "Cultura e patrimonio",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "chatgpt-conversation://69986959-f4bc-8397-964f-9767e5e5eff3",
+"dataAcquisizione": "2026-10-17",
+"note": "Ospite in attesa di conferma nella relazione di marzo; non presente nel programma attuale.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare dati e interesse",
+"scadenzaAzione": "",
+"fonteNominativo": "Stefania Auci",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Autori e scrittori",
+"tema": "Storia dei Florio",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U002",
+"gruppo": "Base utente",
+"nome": "Loredana",
+"cognome": "Cacicia",
+"organizzazione": "RAI, TGR Sicilia",
+"ruolo": "Giornalista",
+"categoria": "Stampa",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "331 170 4033",
+"statoRecapiti": "Fornito; da verificare",
+"fonteUrl": "chatgpt-conversation://69986959-f4bc-8397-964f-9767e5e5eff3",
+"dataAcquisizione": "2026-10-17",
+"note": "",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare dati e interesse",
+"scadenzaAzione": "",
+"fonteNominativo": "Loredana Cacicia",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Televisioni",
+"tema": "Cronaca locale",
+"indirizzo": "Viale Strasburgo, 19",
+"cap": "90146",
+"comune": "Palermo",
+"provincia": "PA",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "https://www.rai.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Sede regionale RAI da fonte 2015, riscontro lavori 2026 in viale Strasburgo 19. Confermare inoltro alla redazione TGR e specializzazione della giornalista.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://www.rai.it/dl/docs/1460551493370Rai_RelazioneSemestrale_2015_V_26_11.pdf",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Sicilia"
+},
+{
+"codice": "U003",
+"gruppo": "Base utente",
+"nome": "Patrizia",
+"cognome": "Di Dio",
+"organizzazione": "La Vie En Rose; ConfCommercio Palermo",
+"ruolo": "Proprietaria e AD; Presidente",
+"categoria": "Rappresentanze economiche",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "patriziadidio@lavieenrose.it",
+"emailAlt": "",
+"telefono": "091 6912015",
+"statoRecapiti": "Fornito; da verificare",
+"fonteUrl": "chatgpt-conversation://69986959-f4bc-8397-964f-9767e5e5eff3",
+"dataAcquisizione": "2026-10-17",
+"note": "Telefono ufficio. Incarichi come forniti dall’utente.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare dati e interesse",
+"scadenzaAzione": "",
+"fonteNominativo": "Patrizia Di Dio",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Associazioni del commercio",
+"tema": "Economia e imprese",
+"indirizzo": "Via Emerico Amari, 11",
+"cap": "90139",
+"comune": "Palermo",
+"provincia": "PA",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "segreteria@confcommercio.pa.it",
+"telSegreteria": "091589430",
+"sito": "https://confcommercio.pa.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione per il ruolo in Confcommercio; mantenuto anche il riferimento imprenditoriale.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://confcommercio.pa.it/contatti/",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Palermo città"
+},
+{
+"codice": "U004",
+"gruppo": "Base utente",
+"nome": "Giuseppe",
+"cognome": "Forello",
+"organizzazione": "MEC Restaurant",
+"ruolo": "CEO",
+"categoria": "Imprese e filiere",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "giuseppe_forello@mac.com",
+"emailAlt": "info@mecrestaurant.it",
+"telefono": "091 9891901 / 347 7532005",
+"statoRecapiti": "Fornito; da verificare",
+"fonteUrl": "chatgpt-conversation://69986959-f4bc-8397-964f-9767e5e5eff3",
+"dataAcquisizione": "2026-10-17",
+"note": "Numeri come forniti; secondo numero indicato MEC.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare dati e interesse",
+"scadenzaAzione": "",
+"fonteNominativo": "Giuseppe Forello",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Ristorazione e chef",
+"tema": "Enogastronomia",
+"indirizzo": "Via Vittorio Emanuele, 452",
+"cap": "90134",
+"comune": "Palermo",
+"provincia": "PA",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "info@mecrestaurant.it",
+"telSegreteria": "0919891901",
+"sito": "https://www.mecrestaurant.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://www.mecrestaurant.it/contatti/",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Palermo città"
+},
+{
+"codice": "U005",
+"gruppo": "Base utente",
+"nome": "Giovanni",
+"cognome": "Giardina",
+"organizzazione": "IRVO",
+"ruolo": "Enologo e funzionario",
+"categoria": "Autorità amministrative",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "giovanni.giardina@regione.sicilia.it",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Fornito; da verificare",
+"fonteUrl": "chatgpt-conversation://69986959-f4bc-8397-964f-9767e5e5eff3",
+"dataAcquisizione": "2026-10-17",
+"note": "Telefono da aggiungere.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare dati e interesse",
+"scadenzaAzione": "",
+"fonteNominativo": "Giovanni Giardina",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Enti pubblici e agenzie",
+"tema": "Vino e Marsala",
+"indirizzo": "Via Libertà, 66",
+"cap": "90144",
+"comune": "Palermo",
+"provincia": "PA",
+"pec": "direzione.irvos@messaggipec.it",
+"referenteSegreteria": "",
+"emailSegreteria": "direzione.vitevino@regione.sicilia.it",
+"telSegreteria": "0916278111",
+"sito": "https://www.irvos.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Indirizzo generale IRVO da Carta servizi 2022. Confermare CAP e ufficio di destinazione prima della spedizione.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://www.irvos.it/wp-content/uploads/2011/11/Carta-Servizi-IRVO-2022.pdf",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Sicilia"
+},
+{
+"codice": "U006",
+"gruppo": "Base utente",
+"nome": "Christian",
+"cognome": "Guzzardi",
+"organizzazione": "Parco Villa Filippina; Digital Makers",
+"ruolo": "Event e Sponsorship Manager; Client Director",
+"categoria": "Cultura e patrimonio",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "info@christianguzzardi.it",
+"emailAlt": "",
+"telefono": "339 723 2125",
+"statoRecapiti": "Fornito; da verificare",
+"fonteUrl": "chatgpt-conversation://69986959-f4bc-8397-964f-9767e5e5eff3",
+"dataAcquisizione": "2026-10-17",
+"note": "Pubblicista per Cronache di gusto e La Sicilia.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare dati e interesse",
+"scadenzaAzione": "",
+"fonteNominativo": "Christian Guzzardi",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Festival e operatori culturali",
+"tema": "Cultura e patrimonio",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Palermo città"
+},
+{
+"codice": "U007",
+"gruppo": "Base utente",
+"nome": "Salvatore",
+"cognome": "Limuti",
+"organizzazione": "Ass. Cavalieri del Marketing",
+"ruolo": "",
+"categoria": "Associazioni e territorio",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "348 373 8401",
+"statoRecapiti": "Fornito; da verificare",
+"fonteUrl": "chatgpt-conversation://69986959-f4bc-8397-964f-9767e5e5eff3",
+"dataAcquisizione": "2026-10-17",
+"note": "Valutare coinvolgimento di altri associati.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare dati e interesse",
+"scadenzaAzione": "",
+"fonteNominativo": "Salvatore Limuti",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Associazioni culturali",
+"tema": "Economia e imprese",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Associazione professionale: verificare l’inquadramento e il ruolo.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U008",
+"gruppo": "Base utente",
+"nome": "Giovanni",
+"cognome": "Marrone",
+"organizzazione": "Università degli Studi di Palermo",
+"ruolo": "Professore ordinario di Semiotica",
+"categoria": "Università e formazione",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "gianfranco.marrone@unipa.it",
+"emailAlt": "",
+"telefono": "333 469 5113 / 09123896305",
+"statoRecapiti": "Fornito; da verificare",
+"fonteUrl": "chatgpt-conversation://69986959-f4bc-8397-964f-9767e5e5eff3",
+"dataAcquisizione": "2026-10-17",
+"note": "VERIFICARE Giovanni/Gianfranco. Categoria originale: Giornalisti e testate. Studi su sociosemiotica, cibo, media e comunicazione.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare dati e interesse",
+"scadenzaAzione": "",
+"fonteNominativo": "Giovanni Marrone",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Docenti e ricercatori",
+"tema": "Enogastronomia",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Palermo città"
+},
+{
+"codice": "U009",
+"gruppo": "Base utente",
+"nome": "Laura",
+"cognome": "Martino",
+"organizzazione": "Content Creator",
+"ruolo": "",
+"categoria": "Comunicazione digitale",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "info.lauramartino@gmail.com",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Fornito; da verificare",
+"fonteUrl": "chatgpt-conversation://69986959-f4bc-8397-964f-9767e5e5eff3",
+"dataAcquisizione": "2026-10-17",
+"note": "Ruolo e recapito da verificare.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare dati e interesse",
+"scadenzaAzione": "",
+"fonteNominativo": "Laura Martino",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Creator enogastronomia",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U010",
+"gruppo": "Base utente",
+"nome": "Davide",
+"cognome": "Puca",
+"organizzazione": "Università degli Studi di Palermo",
+"ruolo": "Professore",
+"categoria": "Università e formazione",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "davide.puca@unipa.it",
+"emailAlt": "",
+"telefono": "328 777 3106",
+"statoRecapiti": "Fornito; da verificare",
+"fonteUrl": "chatgpt-conversation://69986959-f4bc-8397-964f-9767e5e5eff3",
+"dataAcquisizione": "2026-10-17",
+"note": "Categoria assente in origine. Insegnamenti: International Food Writing; Teoria e tecnica della degustazione enogastronomica.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare dati e interesse",
+"scadenzaAzione": "",
+"fonteNominativo": "Davide Puca",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Docenti e ricercatori",
+"tema": "Enogastronomia",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Classificazione e tema proposti per uso interno. Formula di saluto e referente da definire.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Palermo città"
+},
+{
+"codice": "U011",
+"gruppo": "Base utente",
+"nome": "Irene",
+"cognome": "Taormina",
+"organizzazione": "Cantine Florio",
+"ruolo": "On Trade Activation Manager",
+"categoria": "Imprese e filiere",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "chatgpt-conversation://69986959-f4bc-8397-964f-9767e5e5eff3",
+"dataAcquisizione": "2026-10-17",
+"note": "Relatrice nella relazione di marzo; secondo l’utente nel programma attuale interviene Roberto Magnisi.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Verificare dati e interesse",
+"scadenzaAzione": "",
+"fonteNominativo": "Irene Taormina",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Cantine e produttori di vino",
+"tema": "Vino e Marsala",
+"indirizzo": "Via Vincenzo Florio, 1",
+"cap": "91025",
+"comune": "Marsala",
+"provincia": "TP",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "https://store.duca.it",
+"formulaSaluto": "",
+"noteCerimoniale": "Sede societaria del gruppo da fonte ufficiale; verificare ufficio di Irene Taormina e recapito dedicato agli inviti.",
+"statoIndirizzo": "Pubblicato; da riconfermare",
+"fonteIndirizzo": "https://store.duca.it/page/terms-conditions",
+"dataConsultazione": "2026-10-17",
+"territorioSeguito": "Marsala"
+},
+{
+"codice": "U012",
+"gruppo": "Base utente",
+"nome": "Toti",
+"cognome": "Piscopo",
+"organizzazione": "",
+"ruolo": "",
+"categoria": "",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Nominativo fornito dall’utente. Organizzazione, incarico e categoria da verificare.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "Toti Piscopo",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U013",
+"gruppo": "Base utente",
+"nome": "Nino",
+"cognome": "Salerno",
+"organizzazione": "Confindustria",
+"ruolo": "",
+"categoria": "Rappresentanze economiche",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Organizzazione indicata dall’utente. Verificare incarico attuale e struttura territoriale.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "Nino Salerno",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Associazioni industria e artigianato",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U014",
+"gruppo": "Base utente",
+"nome": "",
+"cognome": "",
+"organizzazione": "CCIAA",
+"ruolo": "Presidente",
+"categoria": "Rappresentanze economiche",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Incarico indicato senza nominativo. Verificare quale Camera e se coincide con Alessandro Albanese; non inviare due inviti prima del controllo.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "CCIAA",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Camera di commercio",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U015",
+"gruppo": "Base utente",
+"nome": "Masino",
+"cognome": "Lombardo",
+"organizzazione": "Legacoop Sicilia",
+"ruolo": "Vicepresidente vicario",
+"categoria": "Rappresentanze economiche",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Incarico fornito dall’utente, da verificare. CoopCulture mantenuta separata: collegamento non confermato.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "Masino Lombardo",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Cooperazione",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U016",
+"gruppo": "Base utente",
+"nome": "",
+"cognome": "",
+"organizzazione": "CoopCulture",
+"ruolo": "Referente da individuare",
+"categoria": "Cultura e patrimonio",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Realtà indicata dall’utente. Individuare referente; non attribuire a Masino Lombardo senza conferma.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "CoopCulture",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Festival e operatori culturali",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U017",
+"gruppo": "Base utente",
+"nome": "Simonetta",
+"cognome": "Trovato",
+"organizzazione": "Giornale di Sicilia",
+"ruolo": "Giornalista",
+"categoria": "Stampa",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Testata indicata dall’utente. Recapito e ambito seguito da verificare.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "Simonetta Trovato",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Quotidiani",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U018",
+"gruppo": "Base utente",
+"nome": "",
+"cognome": "",
+"organizzazione": "Rappresentanti HoReCa",
+"ruolo": "Referenti da individuare",
+"categoria": "Rappresentanze economiche",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Voce da sviluppare: ristoratori e chef, albergatori, bar e pubblici esercizi, catering e banqueting.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "Rappresentanti HoReCa",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Ospitalità e ristorazione",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U019",
+"gruppo": "Base utente",
+"nome": "",
+"cognome": "",
+"organizzazione": "Prezzemolo & Vitale",
+"ruolo": "Referente da individuare",
+"categoria": "Imprese e filiere",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Realtà indicata dall’utente. Individuare nominativo e funzione del destinatario.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "Prezzemolo & Vitale",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Distribuzione alimentare",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U020",
+"gruppo": "Base utente",
+"nome": "Leonardo",
+"cognome": "D’Alessandro",
+"organizzazione": "",
+"ruolo": "Grafico",
+"categoria": "Comunicazione digitale",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Professione indicata dall’utente. Verificare studio e recapiti.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "Leonardo D’Alessandro",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Grafica e progettazione visiva",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U021",
+"gruppo": "Base utente",
+"nome": "",
+"cognome": "",
+"organizzazione": "TGS",
+"ruolo": "Direttore",
+"categoria": "Stampa",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Nominativo e recapito attuali da individuare.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "TGS",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Televisioni",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U022",
+"gruppo": "Base utente",
+"nome": "",
+"cognome": "",
+"organizzazione": "PalermoToday",
+"ruolo": "Direttore",
+"categoria": "Stampa",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Nominativo e recapito attuali da individuare.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "PalermoToday",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Testate online",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U023",
+"gruppo": "Base utente",
+"nome": "",
+"cognome": "",
+"organizzazione": "Terradamare Cooperativa Turistica",
+"ruolo": "Referente da individuare",
+"categoria": "Turismo e ospitalità",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Sede legale indicata dall’utente: Torre di San Nicolò. Mancano indirizzo completo e referente.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "Terradamare Cooperativa Turistica",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Operatori del turismo culturale",
+"tema": "Da definire",
+"indirizzo": "Torre di San Nicolò",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "Indicazione dell’utente in questa conversazione; indirizzo incompleto",
+"dataConsultazione": "2026-10-20",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U024",
+"gruppo": "Base utente",
+"nome": "Fabio",
+"cognome": "Ricotta",
+"organizzazione": "Balarm",
+"ruolo": "",
+"categoria": "Stampa",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Associazione a Balarm interpretata dalla frase dell’utente; confermare ruolo e collegamento.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "Fabio Ricotta",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Testate online",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U025",
+"gruppo": "Base utente",
+"nome": "Gaetano",
+"cognome": "Basile",
+"organizzazione": "",
+"ruolo": "",
+"categoria": "Cultura e patrimonio",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Titolo “Prof.” fornito dall’utente, da verificare. Categoria proposta.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "Gaetano Basile",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Storici e studiosi del territorio",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U026",
+"gruppo": "Base utente",
+"nome": "Alessandro",
+"cognome": "Albanese",
+"organizzazione": "",
+"ruolo": "",
+"categoria": "Rappresentanze economiche",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Incarico da verificare. Possibile coincidenza con la voce Presidente CCIAA; mantenute distinte in attesa di conferma.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "Alessandro Albanese",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U027",
+"gruppo": "Base utente",
+"nome": "Giuseppe",
+"cognome": "Vajana",
+"organizzazione": "Stand Florio – progetto e lavori",
+"ruolo": "Architetto, progettista e direttore dei lavori",
+"categoria": "Imprese e filiere",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Ruolo relativo allo Stand Florio fornito dall’utente. Recapiti da acquisire.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "Giuseppe Vajana",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Architettura e progettazione",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U028",
+"gruppo": "Base utente",
+"nome": "",
+"cognome": "",
+"organizzazione": "LiveSicilia",
+"ruolo": "Referente da individuare",
+"categoria": "Stampa",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Voce originale “love sicilia”, interpretata come LiveSicilia. Denominazione da confermare; il successivo sì dell’utente specificava Edmondo.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "LiveSicilia",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Testate online",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U029",
+"gruppo": "Base utente",
+"nome": "Edmondo",
+"cognome": "Tamajo",
+"organizzazione": "Regione Siciliana",
+"ruolo": "Assessore alle Attività produttive",
+"categoria": "Autorità amministrative",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Nome e riferimento alle Attività produttive confermati dall’utente. Incarico e recapiti da riconfermare prima dell’invito.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "Edmondo Tamajo",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "Regione – Presidenza e Assessorati",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+},
+{
+"codice": "U030",
+"gruppo": "Base utente",
+"nome": "Donata",
+"cognome": "Agnello",
+"organizzazione": "",
+"ruolo": "",
+"categoria": "",
+"territorio": "",
+"priorita": "Da definire",
+"motivoInvito": "",
+"email": "",
+"emailAlt": "",
+"telefono": "",
+"statoRecapiti": "Da reperire",
+"fonteUrl": "Conversazione corrente: nominativi forniti dall’utente dopo la prima rubrica",
+"dataAcquisizione": "2026-10-20",
+"note": "Nominativo fornito dall’utente. Organizzazione, ruolo, categoria e recapiti da precisare.",
+"referenteInterno": "",
+"finalita": "Invito evento 06/11/2026",
+"baseGiuridica": "Da valutare",
+"evidenzaBase": "",
+"consenso": "Non documentato",
+"dataConsenso": "",
+"informativa": "Da gestire",
+"dataInformativa": "",
+"opposizione": "Da verificare",
+"revisioneConservazione": "",
+"approvazione": "Da valutare",
+"prossimaAzione": "Confermare identità, incarico e recapito",
+"scadenzaAzione": "",
+"fonteNominativo": "Donata Agnello",
+"verificaIdentita": "Da verificare",
+"sottocategoria": "",
+"tema": "Da definire",
+"indirizzo": "",
+"cap": "",
+"comune": "",
+"provincia": "",
+"pec": "",
+"referenteSegreteria": "",
+"emailSegreteria": "",
+"telSegreteria": "",
+"sito": "",
+"formulaSaluto": "",
+"noteCerimoniale": "Aggiunta da indicazioni dell’utente; nessuna verifica esterna dei nuovi dati.",
+"statoIndirizzo": "Da reperire",
+"fonteIndirizzo": "",
+"dataConsultazione": "",
+"territorioSeguito": "Da definire"
+}
+];
+const ABBINAMENTI={S005:"carrera-fabrizio",S012:"nino-castiglione",U001:"auci-stefania",U002:"cacicia-loredana",U003:"di-dio-patrizia",
+  U004:"forello-giuseppe",U005:"giardina-giovanni",U006:"guzzardi-christian",U008:"marrone-giovanni",U009:"martino-laura",U011:"taormina-irene"};
+const AGGIUNTE={
+  "magnisi-roberto":{codice:"U031",categoria:"Imprese e filiere",sottocategoria:"Cantine e produttori di vino",tema:"Vino e Marsala",territorioSeguito:"Marsala",priorita:"Alta",motivoInvito:"Relatore dell'incontro (Cantine Florio)"},
+  "maniscalco-danilo":{codice:"U032",categoria:"Cultura e patrimonio",sottocategoria:"Storici e studiosi del territorio",tema:"Storia dei Florio",territorioSeguito:"Palermo città",priorita:"Alta",motivoInvito:"Relatore dell'incontro"},
+  "requirez-salvatore":{codice:"U033",categoria:"Cultura e patrimonio",sottocategoria:"Storici e studiosi del territorio",tema:"Storia dei Florio",territorioSeguito:"Sicilia",priorita:"Alta",motivoInvito:"Relatore dell'incontro"},
+  "consorzio-marsala-doc":{codice:"U034",categoria:"Rappresentanze economiche",sottocategoria:"Consorzi e associazioni del vino",tema:"Vino e Marsala",territorioSeguito:"Marsala",priorita:"Media"},
+  "messina-giuseppina":{codice:"U035",categoria:"Stampa",sottocategoria:"Giornalisti freelance",tema:"Enogastronomia",territorioSeguito:"Sicilia",priorita:"Alta",motivoInvito:"Ufficio stampa dell'evento",
+    email:"messinagiusy@libero.it",fonteUrl:"Lettere di invito del 9 ottobre 2026 (contatti dell'ufficio stampa)"}
+};
+const VECCHIE_CATEGORIE={giornalisti:"Stampa",istituzioni:"Autorità amministrative",associazioni:"Rappresentanze economiche",imprese:"Imprese e filiere",operatori:"Turismo e ospitalità",altri:""};
+function migraDati(data){
+  if(data.meta&&data.meta.schema>=3)return false;
+  data.contacts=data.contacts||{};data.settings=data.settings||{};
+  const C=data.contacts,usati=new Set();
+  const trova=r=>{
+    const a=ABBINAMENTI[r.codice];if(a&&C[a]&&!usati.has(a))return a;
+    const e=normEmail(r.email),n=[r.nome,r.cognome].join(" ").trim().toLowerCase();
+    return Object.keys(C).find(id=>!usati.has(id)&&!C[id].codice&&((e&&(normEmail(C[id].email)===e||normEmail(C[id].emailAlt)===e))||(r.nome&&r.cognome&&[C[id].nome,C[id].cognome].join(" ").trim().toLowerCase()===n)));
+  };
+  RUBRICA_20_OTTOBRE.forEach(r=>{
+    const id=trova(r);
+    if(id){
+      const old=C[id],m={...old};
+      Object.keys(r).forEach(k=>{if(r[k])m[k]=r[k]});
+      if(old.email&&r.email&&normEmail(old.email)!==normEmail(r.email)&&!r.emailAlt)m.emailAlt=old.email;
+      const dg=x=>String(x||"").replace(/\D/g,"");
+      if(old.telefono&&!r.telefono)m.telefono=old.telefono;
+      else if(old.telefono&&r.telefono&&!dg(r.telefono).includes(dg(old.telefono))&&!dg(old.telefono).includes(dg(r.telefono)))m.telefono=r.telefono+" / "+old.telefono;
+      m.note=[old.note,r.note].filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).join("\n");
+      m.aggiornato="2026-11-05";C[id]=m;usati.add(id);
+    }else{
+      const nid=r.codice.toLowerCase();
+      C[nid]={...r,provenienza:"Rubrica cerimoniale (20 ottobre 2026)",eventi:[],creato:"2026-11-05",aggiornato:"2026-11-05"};usati.add(nid);
+    }
+  });
+  Object.entries(AGGIUNTE).forEach(([id,x])=>{if(C[id]&&!C[id].codice){const o=C[id];C[id]={...DEFAULTS,...o,...x,gruppo:"Base utente",
+    email:o.email||x.email||"",note:o.note||""};C[id].statoRecapiti=(C[id].email||C[id].telefono)?"Fornito; da verificare":"Da reperire";usati.add(id)}});
+  const max={S:0,U:0};Object.values(C).forEach(c=>{const m=/^([US])(\d+)$/.exec(c.codice||"");if(m)max[m[1]]=Math.max(max[m[1]],+m[2])});
+  Object.keys(C).sort().forEach(id=>{const c=C[id];if(c.codice)return;
+    max.U++;const cat=VECCHIE_CATEGORIE[c.categoria]!==undefined?VECCHIE_CATEGORIE[c.categoria]:(SUBCATS[c.categoria]?c.categoria:"");
+    C[id]={...DEFAULTS,...c,codice:"U"+String(max.U).padStart(3,"0"),gruppo:"Base utente",categoria:cat,sottocategoria:"",
+      statoRecapiti:(c.email||c.telefono)?"Fornito; da verificare":"Da reperire"}});
+  Object.keys(C).forEach(id=>{const c=C[id];if(VECCHIE_CATEGORIE[c.categoria]!==undefined)c.categoria=VECCHIE_CATEGORIE[c.categoria];CAMPI.forEach(f=>{if(c[f.k]==null)c[f.k]=""});if(!Array.isArray(c.eventi))c.eventi=[]});
+  const main=data.settings.main||{};
+  main.maxCodes={S:Math.max(max.S,(main.maxCodes||{}).S||0),U:Math.max(max.U,(main.maxCodes||{}).U||0)};
+  data.settings.main=main;
+  data.meta={...(data.meta||{}),schema:3,aggiornatoIl:todayStr()};
+  return true;
+}
+
 /* ---------- archivio nel browser ----------
    Al primo avvio la rubrica parte dai dati iniziali (SEED); da quel momento ogni modifica
    viene salvata nel localStorage di questo browser e ritrovata alle aperture successive. */
@@ -1051,6 +3413,8 @@ function makeStoredDB(seed){
   let data=null;
   try{const raw=localStorage.getItem(STORAGE_KEY);if(raw)data=JSON.parse(raw)}catch(_){data=null}
   if(!data||typeof data!=="object"||!data.contacts)data=clone(seed);
+  else{try{if(!(data.meta&&data.meta.schema>=3)&&!localStorage.getItem(STORAGE_KEY+"-backup"))localStorage.setItem(STORAGE_KEY+"-backup",JSON.stringify(data))}catch(_){}}
+  migraDati(data);
   let warned=false;
   const persist=()=>{try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}catch(_){if(!warned){warned=true;toast("Questo browser non consente il salvataggio: le modifiche andranno perse alla chiusura.")}}};
   persist();
